@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Saraswati Portal
 
-## Getting Started
+School result-management portal. Admin uploads Excel result files → parser + preview → report cards (admin + parent-facing). Marathi/English.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Next.js 16 (App Router) · TypeScript · Tailwind · Supabase (Postgres + Auth + Storage) · xlsx · zod · sonner
+
+## Data model (v2)
+
+```
+standards         (10 वी, 9 वी, ...)     per academic year
+   └─ divisions   (अ, ब, क)               inside a standard
+         └─ students                       (roll_no + optional GR no.)
+                └─ exams                   (per division · test_type · year)
+                       └─ exam_subjects   (per paper: name, max, date)
+                              └─ marks   (per student · per paper)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Standards + Divisions:** clean two-level hierarchy. "10th SSC / अ" = standard `10 वी` → division `अ`.
+- **GR (General Register) no.:** stable per-student identifier. Optional but unique when present.
+- **Roll no.:** changes year-to-year — not the identity.
+- Room for **attendance / fees / promotion / TC** later without schema change.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## First-time setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Create Supabase project
+https://supabase.com/dashboard/projects → New project. Copy from Project Settings → API:
+- Project URL (`https://xxxxx.supabase.co`)
+- anon public key
+- service_role secret key
 
-## Learn More
+### 2. Run the schema
+Supabase SQL Editor → paste `supabase/schema.sql` → Run.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Create admin user
+Supabase → Authentication → Users → Add user → set email + password, tick "Auto Confirm".
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. Env
+```bash
+cp .env.local.example .env.local
+```
+Fill in the 3 keys.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 5. Run
+```bash
+npm install
+npm run dev
+```
+Open http://localhost:3000 (parents land on `/lookup`; admin uses `/login`).
 
-## Deploy on Vercel
+## Migrating from v1 (if you already ran the old schema)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Run this once in Supabase SQL Editor to wipe, then re-run `schema.sql`:
+```sql
+drop table if exists marks, exam_subjects, exams, students, divisions,
+                     standards, classes, school_settings cascade;
+drop function if exists set_updated_at() cascade;
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Routes
+
+**Admin (auth-gated)**
+- `/admin` — dashboard
+- `/admin/classes` — Standards & Divisions
+- `/admin/students?division=<id>` — Students in a division
+- `/admin/templates` — download Excel templates
+- `/admin/settings` — school name / logo
+- `/admin/results` — list of uploaded exams
+- `/admin/results/upload` — 3-step wizard (pick division → upload → preview & confirm)
+- `/admin/results/[examId]` — per-exam student list
+- `/admin/results/[examId]/[studentId]` — single report card (print-ready)
+- `/admin/results/[examId]/[studentId]/edit` — manual marks correction
+- `/admin/results/[examId]/print-all` — all cards, one per page
+
+**Parent (public)**
+- `/lookup` — mobile + DOB → child(ren) → exam → card
+- `/lookup/[examId]/[studentId]` — parent view of card
+
+## Excel templates
+
+Go to **Admin → Templates**. Download-and-fill for:
+
+1. **Students roster** — bulk-add students to a division.
+2. **Result — single student**
+3. **Result — bulk (stacked)** — N students, one block after another in one sheet
+4. **Result — bulk (multi-sheet)** — one workbook, one sheet per student
+
+Each template includes a "How to fill" sheet inside.
+
+## Result file layout (all templates match this)
+
+- Row 1 title: `<Class> <Test type> <Academic year>` — e.g. `10 वी आठवडी परीक्षा 2026-27`
+- `विद्यार्थ्याचे नाव : <name>` row
+- Table headers: `पेपर क्र | दिनांक | विषय | गुण | पैकी गुण | Grade`
+
+### Upload wizard behaviour
+
+For each detected student, admin picks one of three actions on the Preview screen:
+- **Map** to an existing student in the roster (auto-selected when name matches)
+- **Create new** — inline form: roll no, GR (optional), mobile, DOB. Student is created + linked in the same save.
+- **Skip**
+
+Name matching is honorific-tolerant (`कु.`, `सौ`, `श्री.` etc. stripped) and forgiving with typos.
+
+## Deployment
+
+Push to GitHub → import to Vercel → paste the 3 env vars → deploy.
