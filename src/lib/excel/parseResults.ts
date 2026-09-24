@@ -202,7 +202,7 @@ function parseStudentBlock(
   const warnings: string[] = [];
 
   // Find the student name (may sit before or on the column-header row)
-  let cursor = start;
+  const cursor = start;
   let studentName: string | null = null;
 
   // scan up to 6 rows ahead looking for a name label OR a column-header row
