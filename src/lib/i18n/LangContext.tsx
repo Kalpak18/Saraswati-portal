@@ -1,22 +1,34 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Lang } from "./dict";
 
 type Ctx = { lang: Lang; setLang: (l: Lang) => void };
 const LangCtx = createContext<Ctx>({ lang: "mr", setLang: () => {} });
 
-export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("mr");
+// localStorage is browser-only: the server snapshot keeps SSR and hydration
+// on the default language, then the stored choice applies.
+const subscribeNever = () => () => {};
+const readStoredLang = () => {
+  try {
+    return localStorage.getItem("lang");
+  } catch {
+    return null;
+  }
+};
 
-  useEffect(() => {
-    const saved = (typeof window !== "undefined" && localStorage.getItem("lang")) as Lang | null;
-    if (saved === "mr" || saved === "en") setLangState(saved);
-  }, []);
+export function LangProvider({ children }: { children: ReactNode }) {
+  const stored = useSyncExternalStore(subscribeNever, readStoredLang, () => null);
+  const [chosen, setChosen] = useState<Lang | null>(null);
+  const lang: Lang = chosen ?? (stored === "mr" || stored === "en" ? stored : "mr");
 
   const setLang = (l: Lang) => {
-    setLangState(l);
-    if (typeof window !== "undefined") localStorage.setItem("lang", l);
+    setChosen(l);
+    try {
+      localStorage.setItem("lang", l);
+    } catch {
+      /* storage blocked — language still applies for this session */
+    }
   };
 
   return <LangCtx.Provider value={{ lang, setLang }}>{children}</LangCtx.Provider>;

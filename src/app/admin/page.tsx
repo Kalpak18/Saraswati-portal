@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import DashboardClient from "./DashboardClient";
 
