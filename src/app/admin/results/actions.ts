@@ -249,9 +249,8 @@ async function saveOneExam(
     }
   }
 
-  // 3. Filter skipped slots + create new students
-  const activeSlots = p.students.filter((s) => s.on_conflict !== "skip" || s.mode === "create" || true);
-  // (We still respect on_conflict === "skip" per-student below, right before mark writes.)
+  // 3. Create new students (on_conflict === "skip" is honoured per-student
+  //    below, right before mark writes)
 
   const studentIdBySlot: (string | null)[] = new Array(p.students.length).fill(null);
   const createRows: { slotIdx: number; payload: {
