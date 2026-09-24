@@ -36,6 +36,13 @@ export function Modal({
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
+  // Keep the latest onClose in a ref so the mount effect below doesn't re-run
+  // every time the parent passes a new inline arrow — that used to steal focus
+  // from every input on every keystroke (the cleanup called `.focus()` on the
+  // opener). Ref means one setup on open, one teardown on close, nothing else.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -56,7 +63,7 @@ export function Modal({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       // Trap Tab inside the dialog.
@@ -83,7 +90,10 @@ export function Modal({
       document.removeEventListener("keydown", onKey);
       returnFocusRef.current?.focus?.();
     };
-  }, [open, onClose]);
+    // `open` is the only trigger. `onClose` is read via ref (see above), so
+    // parents can pass inline arrows without stealing focus from inputs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
 

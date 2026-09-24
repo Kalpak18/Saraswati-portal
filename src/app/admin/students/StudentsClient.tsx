@@ -8,6 +8,8 @@ import { Pencil, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
+import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
 import { saveStudent, deleteStudent, importStudents } from "./actions";
 
 type Std = { id: string; name: string; academic_year: string };
@@ -31,12 +33,32 @@ type EditState = {
   gr_no: string;
   roll_no: number | "";
   student_name: string;
-  parent_mobile: string;
+  parent_country: Country;
+  parent_mobile_local: string;
   dob: string;
   gender: string;
   admission_date: string;
   is_active: boolean;
 };
+
+// Split a stored mobile (e.g. "+919822014571", "9822014571", "09822014571")
+// into (country, local). Best-effort by longest matching dial prefix.
+function splitMobile(raw: string): { country: Country; local: string } {
+  const digits = String(raw ?? "").replace(/\D/g, "");
+  if (!digits) return { country: DEFAULT_COUNTRY, local: "" };
+  // Strip a leading zero (national trunk prefix common in IN etc.) if what
+  // remains still parses cleanly.
+  const trimmed = digits.startsWith("0") && digits.length > 10 ? digits.slice(1) : digits;
+  // Match the longest dial code that fits.
+  const sorted = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
+  for (const c of sorted) {
+    if (trimmed.startsWith(c.dial) && trimmed.length > c.dial.length) {
+      return { country: c, local: trimmed.slice(c.dial.length) };
+    }
+  }
+  // No dial code prefix — treat the whole thing as local, default country.
+  return { country: DEFAULT_COUNTRY, local: trimmed };
+}
 
 export default function StudentsClient({
   standards, divisions, selectedDivisionId, students,
@@ -74,17 +96,21 @@ export default function StudentsClient({
     if (!selectedDivisionId) { toast.error("Add a standard + division first"); return; }
     setEditing({
       division_id: selectedDivisionId, gr_no: "", roll_no: "",
-      student_name: "", parent_mobile: "", dob: "",
+      student_name: "",
+      parent_country: DEFAULT_COUNTRY, parent_mobile_local: "",
+      dob: "",
       gender: "", admission_date: "", is_active: true,
     });
     setEditOpen(true);
   }
   function openEdit(s: Student) {
+    const { country, local } = splitMobile(s.parent_mobile);
     setEditing({
       id: s.id, division_id: selectedDivisionId,
       gr_no: s.gr_no ?? "",
       roll_no: s.roll_no, student_name: s.student_name,
-      parent_mobile: s.parent_mobile, dob: s.dob,
+      parent_country: country, parent_mobile_local: local,
+      dob: s.dob,
       gender: s.gender ?? "",
       admission_date: s.admission_date ?? "",
       is_active: s.is_active,
@@ -98,6 +124,10 @@ export default function StudentsClient({
     if (editing.roll_no === "" || Number.isNaN(Number(editing.roll_no))) {
       toast.error("Roll no required"); return;
     }
+    const local = editing.parent_mobile_local.replace(/\D/g, "");
+    if (!local) { toast.error("Parent mobile required"); return; }
+    const parent_mobile = `+${editing.parent_country.dial}${local}`;
+
     startTransition(async () => {
       try {
         await saveStudent({
@@ -105,7 +135,7 @@ export default function StudentsClient({
           gr_no: editing.gr_no || null,
           roll_no: Number(editing.roll_no),
           student_name: editing.student_name,
-          parent_mobile: editing.parent_mobile, dob: editing.dob,
+          parent_mobile, dob: editing.dob,
           gender: editing.gender || null,
           admission_date: editing.admission_date || null,
           is_active: editing.is_active,
@@ -271,11 +301,29 @@ export default function StudentsClient({
               <Input required value={editing.student_name}
                 onChange={(e) => setEditing({ ...editing, student_name: e.target.value })} />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
+            <div className="flex flex-col gap-1 text-sm">
               <span className="font-medium text-gray-700">Parent mobile *</span>
-              <Input required value={editing.parent_mobile}
-                onChange={(e) => setEditing({ ...editing, parent_mobile: e.target.value })} />
-            </label>
+              <div className="flex items-stretch gap-2">
+                <CountryCodeSelect
+                  value={editing.parent_country}
+                  onChange={(c) => setEditing({ ...editing, parent_country: c })}
+                  disabled={pending}
+                />
+                <Input
+                  required
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  maxLength={15}
+                  placeholder="9822014571"
+                  className="flex-1"
+                  value={editing.parent_mobile_local}
+                  onChange={(e) =>
+                    setEditing({ ...editing, parent_mobile_local: e.target.value.replace(/\D/g, "") })
+                  }
+                />
+              </div>
+            </div>
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium text-gray-700">DOB *</span>
               <Input required type="date" value={editing.dob}
