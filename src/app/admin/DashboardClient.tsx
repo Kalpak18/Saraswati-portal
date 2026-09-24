@@ -94,21 +94,19 @@ export default function DashboardClient({
       {/* Primary CTA — the action they came here to do */}
       <Link
         href="/admin/results/upload"
-        className="group relative flex items-center justify-between overflow-hidden rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 px-6 py-6 text-white shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+        className="group relative flex items-center gap-3 overflow-hidden rounded-xl bg-linear-to-br from-indigo-600 to-indigo-700 p-4 text-white shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg sm:gap-4 sm:p-6"
       >
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/20 backdrop-blur">
-            <Upload className="h-6 w-6" />
+        <div className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/20 backdrop-blur sm:h-12 sm:w-12">
+          <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold sm:text-lg">
+            {t(dict.dashboard.uploadCta, lang)}
           </div>
-          <div>
-            <div className="text-base font-semibold sm:text-lg">
-              {t(dict.dashboard.uploadCta, lang)}
-            </div>
-            <div className="mt-0.5 text-xs text-indigo-100 sm:text-sm">
-              {lang === "mr"
-                ? "Excel फाईल अपलोड करा — विद्यार्थी आपोआप जोडले जातील"
-                : "Upload an Excel file — students are matched automatically"}
-            </div>
+          <div className="mt-0.5 line-clamp-2 text-[11px] text-indigo-100 sm:text-sm">
+            {lang === "mr"
+              ? "Excel फाईल अपलोड करा — विद्यार्थी आपोआप जोडले जातील"
+              : "Upload an Excel file — students are matched automatically"}
           </div>
         </div>
         <ArrowRight className="h-5 w-5 flex-none transition-transform group-hover:translate-x-1" />

@@ -4,6 +4,7 @@ import "./globals.css";
 import { LangProvider } from "@/lib/i18n/LangContext";
 import { Toaster } from "sonner";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
+import { InstallPrompt } from "@/components/ui/InstallPrompt";
 
 export const metadata: Metadata = {
   title: {
@@ -32,6 +33,7 @@ export default function RootLayout(props: LayoutProps<"/">) {
             <RouteProgressBar />
           </Suspense>
           {props.children}
+          <InstallPrompt />
           <Toaster
             richColors
             position="top-right"

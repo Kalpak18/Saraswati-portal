@@ -57,10 +57,29 @@ body {
 
 /* Print ------------------------------------------------------------------ */
 @media print {
-  body { background: #fff; }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    /* Force browsers to keep our background colours (light gray table header
+       rows) so the report card looks the same on paper as on screen. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .no-print, .print\:hidden { display: none !important; }
   .print\:break-after-page { break-after: page; }
-  @page { margin: 12mm; }
+  .report-card {
+    /* Prevent a single card from splitting across pages when possible. */
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+  /* Anchors on paper: no underline noise unless meaningful. */
+  a { text-decoration: none !important; color: inherit !important; }
+  @page {
+    margin: 10mm 12mm;
+    size: A4 portrait;
+  }
 }
 
 /* Respect reduced motion. */

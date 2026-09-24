@@ -70,7 +70,7 @@ export function CountryCodeSelect({ value, onChange, disabled }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-0 z-30 mt-2 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div className="absolute left-0 z-50 mt-2 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
           <div className="relative border-b border-gray-100 p-2">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
             <input

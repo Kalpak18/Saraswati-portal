@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { Badge } from "@/components/ui/Badge";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { saveStandard, deleteStandard, saveDivision, deleteDivision } from "./actions";
 import { normalizeDivision, normalizeStandard, displayDivision, displayStandard } from "@/lib/i18n/normalize";
 
@@ -95,38 +98,57 @@ export default function StandardsClient({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Standards & Divisions</h1>
-        <Button onClick={openAddStd}><Plus className="mr-1 h-4 w-4" /> Add standard</Button>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        title="Standards & Divisions"
+        description="Create standards (10 वी, 9 वी…), then add divisions (अ, ब, क) underneath."
+        actions={
+          <Button onClick={openAddStd} leftIcon={<Plus className="h-4 w-4" />}>
+            <span className="hidden sm:inline">Add standard</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        }
+      />
 
       {standards.length === 0 && (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 sm:p-10">
           No standards yet. Click <b>Add standard</b> — e.g. <em>10 वी</em>, then add divisions <em>अ, ब, क</em> under it.
         </div>
       )}
+
+      <div className="space-y-3">
 
       {standards.map((s) => {
         const divs = divsByStd.get(s.id) ?? [];
         const isOpen = expanded[s.id] ?? true;
         return (
-          <div key={s.id} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
-              <button onClick={() => setExpanded((e) => ({ ...e, [s.id]: !isOpen }))}
-                className="rounded p-1 text-gray-500 hover:bg-gray-200">
+          <div key={s.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2 sm:px-4 sm:py-3">
+              <IconButton
+                label={isOpen ? `Collapse ${s.name}` : `Expand ${s.name}`}
+                aria-expanded={isOpen}
+                onClick={() => setExpanded((e) => ({ ...e, [s.id]: !isOpen }))}
+                size="sm"
+              >
                 {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900">{s.name}</div>
-                <div className="text-xs text-gray-500">Academic year: {s.academic_year} · {divs.length} division{divs.length === 1 ? "" : "s"}</div>
+              </IconButton>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-gray-900 sm:text-base">{s.name}</div>
+                <div className="truncate text-xs text-gray-500">
+                  {s.academic_year} · {divs.length} division{divs.length === 1 ? "" : "s"}
+                </div>
               </div>
-              <button className="rounded p-1.5 text-gray-500 hover:bg-gray-200" onClick={() => openEditStd(s)}>
+              <IconButton label={`Edit ${s.name}`} onClick={() => openEditStd(s)}>
                 <Pencil className="h-4 w-4" />
-              </button>
-              <button className="rounded p-1.5 text-red-500 hover:bg-red-50" onClick={() => onDeleteStd(s)} disabled={pending}>
+              </IconButton>
+              <IconButton
+                tone="danger"
+                label={`Delete ${s.name}`}
+                onClick={() => onDeleteStd(s)}
+                disabled={pending}
+              >
                 <Trash2 className="h-4 w-4" />
-              </button>
+              </IconButton>
             </div>
 
             {isOpen && (
@@ -137,10 +159,12 @@ export default function StandardsClient({
                   </div>
                 )}
                 {divs.map((d) => (
-                  <div key={d.id} className="flex items-center gap-2 px-4 py-2.5">
-                    <div className="flex-1">
-                      <Link href={`/admin/students?division=${d.id}`}
-                        className="inline-flex items-center gap-1 font-medium text-gray-900 hover:text-indigo-600">
+                  <div key={d.id} className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/admin/students?division=${d.id}`}
+                        className="inline-flex items-center gap-1 rounded font-medium text-gray-900 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                      >
                         Division {d.name}
                         <ArrowRight className="h-3 w-3" />
                       </Link>
@@ -148,22 +172,33 @@ export default function StandardsClient({
                         {studentCountByDivision[d.id] ?? 0} students
                       </div>
                     </div>
-                    <span className={d.is_active
-                      ? "rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
-                      : "rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500"}>
+                    <Badge tone={d.is_active ? "green" : "gray"}>
                       {d.is_active ? "Active" : "Inactive"}
-                    </span>
-                    <button className="rounded p-1.5 text-gray-500 hover:bg-gray-100" onClick={() => openEditDiv(d)}>
+                    </Badge>
+                    <IconButton
+                      label={`Edit division ${d.name}`}
+                      onClick={() => openEditDiv(d)}
+                    >
                       <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="rounded p-1.5 text-red-500 hover:bg-red-50" onClick={() => onDeleteDiv(d)} disabled={pending}>
+                    </IconButton>
+                    <IconButton
+                      tone="danger"
+                      label={`Delete division ${d.name}`}
+                      onClick={() => onDeleteDiv(d)}
+                      disabled={pending}
+                    >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </IconButton>
                   </div>
                 ))}
-                <div className="px-4 py-2">
-                  <Button size="sm" variant="secondary" onClick={() => openAddDiv(s.id)}>
-                    <Plus className="mr-1 h-3 w-3" /> Add division
+                <div className="px-3 py-2 sm:px-4">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openAddDiv(s.id)}
+                    leftIcon={<Plus className="h-3 w-3" />}
+                  >
+                    Add division
                   </Button>
                 </div>
               </div>
@@ -171,6 +206,7 @@ export default function StandardsClient({
           </div>
         );
       })}
+      </div>
 
       {/* Standard modal */}
       <Modal open={!!stdModal} onClose={() => setStdModal(null)}

@@ -4,11 +4,15 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { Pencil, Trash2, Upload } from "lucide-react";
+import { Pencil, Trash2, Upload, Users, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
+import { IconButton } from "@/components/ui/IconButton";
+import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
 import { saveStudent, deleteStudent, importStudents } from "./actions";
 
@@ -214,77 +218,180 @@ export default function StudentsClient({
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900">Students</h1>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        title="Students"
+        description={
+          selectedDivisionId
+            ? `${filtered.length} of ${students.length} shown`
+            : "Add a division first, then manage its students here."
+        }
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setImportOpen(true)}
+              disabled={!selectedDivisionId}
+              leftIcon={<Upload className="h-4 w-4" />}
+            >
+              <span className="hidden sm:inline">Import Excel</span>
+              <span className="sm:hidden">Import</span>
+            </Button>
+            <Button
+              onClick={openAdd}
+              disabled={!selectedDivisionId}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              <span className="hidden sm:inline">Add student</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          </>
+        }
+      />
+
+      {/* Filter bar: division picker + search */}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="flex flex-col gap-1 text-xs sm:min-w-[220px]">
+          <span className="font-medium uppercase tracking-wide text-gray-500">Division</span>
           <select
-            className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+            className="h-11 rounded-md border border-gray-300 bg-white px-3 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:h-10"
             value={selectedDivisionId}
             onChange={(e) => onDivChange(e.target.value)}
+            aria-label="Filter by division"
           >
             {divisions.length === 0 && <option value="">— No divisions yet —</option>}
             {divisions.map((d) => <option key={d.id} value={d.id}>{divisionLabel(d)}</option>)}
           </select>
-          <Button variant="secondary" onClick={() => setImportOpen(true)} disabled={!selectedDivisionId}>
-            <Upload className="mr-1 h-4 w-4" /> Import Excel
-          </Button>
-          <Button onClick={openAdd} disabled={!selectedDivisionId}>+ Add student</Button>
-        </div>
+        </label>
+        <label className="flex flex-1 flex-col gap-1 text-xs">
+          <span className="font-medium uppercase tracking-wide text-gray-500">Search</span>
+          <Input
+            placeholder="Name, roll, or GR"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            leftAdornment={<Search className="h-4 w-4" />}
+            aria-label="Search students"
+          />
+        </label>
       </div>
 
-      <Input placeholder="Search by name, roll, or GR"
-        value={query} onChange={(e) => setQuery(e.target.value)}
-        className="max-w-sm" />
-
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-3 py-3">Roll</th>
-              <th className="px-3 py-3">GR No</th>
-              <th className="px-3 py-3">Name</th>
-              <th className="px-3 py-3">Parent mobile</th>
-              <th className="px-3 py-3">DOB</th>
-              <th className="px-3 py-3">Gender</th>
-              <th className="px-3 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                No students in this division yet.
-              </td></tr>
-            )}
-            {filtered.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-gray-700">{s.roll_no}</td>
-                <td className="px-3 py-2 text-gray-500">{s.gr_no ?? "-"}</td>
-                <td className="px-3 py-2 font-medium text-gray-900">{s.student_name}</td>
-                <td className="px-3 py-2 text-gray-700">{s.parent_mobile}</td>
-                <td className="px-3 py-2 text-gray-700">{s.dob}</td>
-                <td className="px-3 py-2 text-gray-500">{s.gender ?? "-"}</td>
-                <td className="px-3 py-2 text-right">
-                  <div className="inline-flex items-center gap-1">
-                    <button className="rounded p-1.5 text-gray-500 hover:bg-gray-100" onClick={() => openEdit(s)}>
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button className="rounded p-1.5 text-red-500 hover:bg-red-50" onClick={() => onDelete(s)} disabled={pending}>
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+      <ResponsiveTable
+        head={
+          <>
+            <th className="px-3 py-3">Roll</th>
+            <th className="px-3 py-3">GR No</th>
+            <th className="px-3 py-3">Name</th>
+            <th className="px-3 py-3">Parent mobile</th>
+            <th className="px-3 py-3">DOB</th>
+            <th className="px-3 py-3">Gender</th>
+            <th className="px-3 py-3 text-right">Actions</th>
+          </>
+        }
+        empty={
+          <EmptyState
+            icon={<Users className="h-6 w-6" />}
+            title="No students yet"
+            description={
+              selectedDivisionId
+                ? "Add students one at a time, or import a whole class from Excel."
+                : "Create a standard and a division first, then come back here."
+            }
+            action={
+              selectedDivisionId ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button variant="secondary" onClick={() => setImportOpen(true)} leftIcon={<Upload className="h-4 w-4" />}>
+                    Import Excel
+                  </Button>
+                  <Button onClick={openAdd} leftIcon={<Plus className="h-4 w-4" />}>
+                    Add student
+                  </Button>
+                </div>
+              ) : null
+            }
+          />
+        }
+        rows={filtered.map((s) => ({
+          key: s.id,
+          cells: (
+            <>
+              <td className="px-3 py-2 text-gray-700 tabular-nums">{s.roll_no}</td>
+              <td className="px-3 py-2 text-gray-500">{s.gr_no ?? "—"}</td>
+              <td className="px-3 py-2 font-medium text-gray-900">{s.student_name}</td>
+              <td className="px-3 py-2 tabular-nums text-gray-700">{s.parent_mobile}</td>
+              <td className="px-3 py-2 text-gray-700 tabular-nums">{s.dob}</td>
+              <td className="px-3 py-2 text-gray-500">{s.gender ?? "—"}</td>
+              <td className="px-3 py-2 text-right">
+                <div className="inline-flex items-center gap-1">
+                  <IconButton label={`Edit ${s.student_name}`} onClick={() => openEdit(s)}>
+                    <Pencil className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    tone="danger"
+                    label={`Delete ${s.student_name}`}
+                    onClick={() => onDelete(s)}
+                    disabled={pending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </div>
+              </td>
+            </>
+          ),
+          mobile: (
+            <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                    Roll {s.roll_no}{s.gr_no ? ` · GR ${s.gr_no}` : ""}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <div className="mt-0.5 truncate text-base font-semibold text-gray-900">
+                    {s.student_name}
+                  </div>
+                </div>
+                <div className="flex flex-none gap-1">
+                  <IconButton label={`Edit ${s.student_name}`} onClick={() => openEdit(s)}>
+                    <Pencil className="h-4 w-4" />
+                  </IconButton>
+                  <IconButton
+                    tone="danger"
+                    label={`Delete ${s.student_name}`}
+                    onClick={() => onDelete(s)}
+                    disabled={pending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </IconButton>
+                </div>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <div>
+                  <dt className="font-medium uppercase tracking-wide text-gray-500">Mobile</dt>
+                  <dd className="tabular-nums text-gray-800 break-all">{s.parent_mobile}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium uppercase tracking-wide text-gray-500">DOB</dt>
+                  <dd className="tabular-nums text-gray-800">{s.dob}</dd>
+                </div>
+                {s.gender && (
+                  <div>
+                    <dt className="font-medium uppercase tracking-wide text-gray-500">Gender</dt>
+                    <dd className="text-gray-800">{s.gender}</dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          ),
+        }))}
+      />
 
       {/* Add / Edit modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)}
-        title={editing?.id ? "Edit student" : "Add student"} className="max-w-lg">
+      <Modal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title={editing?.id ? "Edit student" : "Add student"}
+        size="xl"
+      >
         {editing && (
-          <form onSubmit={onSave} className="grid grid-cols-2 gap-3">
+          <form onSubmit={onSave} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
               <span className="font-medium text-gray-700">Roll no *</span>
               <Input required type="number" min={1}
@@ -296,12 +403,12 @@ export default function StudentsClient({
               <Input value={editing.gr_no}
                 onChange={(e) => setEditing({ ...editing, gr_no: e.target.value })} />
             </label>
-            <label className="col-span-2 flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
               <span className="font-medium text-gray-700">Name *</span>
               <Input required value={editing.student_name}
                 onChange={(e) => setEditing({ ...editing, student_name: e.target.value })} />
             </label>
-            <div className="flex flex-col gap-1 text-sm">
+            <div className="flex flex-col gap-1 text-sm sm:col-span-2">
               <span className="font-medium text-gray-700">Parent mobile *</span>
               <div className="flex items-stretch gap-2">
                 <CountryCodeSelect
@@ -347,38 +454,57 @@ export default function StudentsClient({
               <Input type="date" value={editing.admission_date}
                 onChange={(e) => setEditing({ ...editing, admission_date: e.target.value })} />
             </label>
-            <label className="col-span-2 inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={editing.is_active}
-                onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} />
-              <span>Active</span>
+            <label className="inline-flex items-center gap-2 text-sm sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={editing.is_active}
+                onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <span>Active — appears in class rosters &amp; parent lookup</span>
             </label>
-            <div className="col-span-2 flex justify-end gap-2 pt-2">
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:col-span-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+              <Button type="submit" loading={pending}>Save</Button>
             </div>
           </form>
         )}
       </Modal>
 
       {/* Import modal */}
-      <Modal open={importOpen} onClose={() => setImportOpen(false)} title="Import students from Excel">
+      <Modal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import students from Excel"
+        size="lg"
+      >
         <div className="flex flex-col gap-4 text-sm">
           <p className="text-gray-600">
-            Columns: <code>gr_no</code>, <code>roll_no</code>, <code>student_name</code>,{" "}
-            <code>parent_mobile</code>, <code>dob</code>, <code>gender</code>, <code>admission_date</code>.
-            Dates as YYYY-MM-DD or DD/MM/YYYY.
+            Columns: <code className="rounded bg-gray-100 px-1 text-xs">gr_no</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">roll_no</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">student_name</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">parent_mobile</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">dob</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">gender</code>,{" "}
+            <code className="rounded bg-gray-100 px-1 text-xs">admission_date</code>.
+            Dates in YYYY-MM-DD or DD/MM/YYYY.
           </p>
-          <p className="text-gray-500 text-xs">
-            Get the ready template at <b>Templates</b> in the sidebar.
+          <p className="text-xs text-gray-500">
+            Get a ready-to-fill template at <b>Templates</b> in the sidebar.
           </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
-          />
-          <div className="flex justify-end">
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center hover:border-indigo-400 hover:bg-indigo-50">
+            <Upload className="h-6 w-6 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Choose an Excel file</span>
+            <span className="text-xs text-gray-500">.xlsx, .xls, or .csv</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              className="hidden"
+            />
+          </label>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="secondary" onClick={() => setImportOpen(false)}>Cancel</Button>
           </div>
         </div>

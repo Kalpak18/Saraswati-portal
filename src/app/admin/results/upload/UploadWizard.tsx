@@ -534,13 +534,19 @@ export default function UploadWizard({
         ))}
       </div>
 
-      <div className="sticky bottom-0 flex justify-between gap-3 border-t border-gray-200 bg-white/95 p-4 backdrop-blur">
-        <Button variant="secondary" onClick={() => setStep({ kind: "select" })}>
-          <X className="mr-1 h-4 w-4" /> Cancel
+      <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-2 border-t border-gray-200 bg-white/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:mx-0">
+        <Button variant="secondary" onClick={() => setStep({ kind: "select" })} leftIcon={<X className="h-4 w-4" />}>
+          Cancel
         </Button>
-        <Button size="lg" onClick={onConfirm} disabled={pending}>
-          <Check className="mr-1 h-4 w-4" />
-          {pending ? "Working…" : `Confirm & Save (${stats.matched + stats.creating})`}
+        <Button
+          size="lg"
+          onClick={onConfirm}
+          loading={pending}
+          leftIcon={pending ? undefined : <Check className="h-4 w-4" />}
+        >
+          {pending
+            ? "Working…"
+            : `Confirm & Save (${stats.matched + stats.creating})`}
         </Button>
       </div>
 
@@ -568,7 +574,7 @@ export default function UploadWizard({
                 </li>
               ))}
             </ul>
-            <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-3">
+            <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row sm:flex-wrap sm:justify-end">
               <Button variant="secondary" onClick={() => setConflicts(null)}>Cancel — I&apos;ll adjust manually</Button>
               <Button variant="secondary" onClick={() => {
                 applyDefaultToConflicts("skip");
@@ -633,73 +639,95 @@ function StudentCard({
   const currentRoster = rostersByDivision[resolved.division_id ?? ""] ?? [];
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start gap-3 p-4">
-        <div className="min-w-45 flex-1">
-          <div className="text-xs uppercase text-gray-500">From file</div>
-          <div className="font-medium text-gray-900">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12">
+        {/* Header: name + meta + badge */}
+        <div className="min-w-0 lg:col-span-4">
+          <div className="mb-1 flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">From file</span>
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>{badge.text}</span>
+          </div>
+          <div className="truncate text-sm font-semibold text-gray-900">
             {resolved.raw.raw_student_name || <em className="text-gray-400">(no name)</em>}
           </div>
-          <div className="mt-0.5 text-xs text-gray-500">
-            {resolved.raw.roll_no != null && <>Roll #{resolved.raw.roll_no} · </>}
-            {resolved.raw.division_canonical && <>Div {displayDivision(resolved.raw.division_canonical, "mr")} · </>}
-            {resolved.raw.gr_no && <>GR {resolved.raw.gr_no} · </>}
+          <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-gray-500">
+            {resolved.raw.roll_no != null && <span>Roll #{resolved.raw.roll_no}</span>}
+            {resolved.raw.division_canonical && <span>Div {displayDivision(resolved.raw.division_canonical, "mr")}</span>}
+            {resolved.raw.gr_no && <span>GR {resolved.raw.gr_no}</span>}
             {resolved.raw.test_type && <span className="text-indigo-600">Test: {resolved.raw.test_type}</span>}
           </div>
         </div>
 
-        <div className="min-w-35">
-          <div className="text-xs uppercase text-gray-500">Division</div>
-          <select
-            className="mt-0.5 w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
-            value={resolved.division_id ?? ""}
-            onChange={(e) => onChange({ ...resolved, division_id: e.target.value, chosen_id: null })}
-          >
-            {divisionsForStd.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
+        {/* Division picker */}
+        <div className="lg:col-span-3">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-medium uppercase tracking-wide text-gray-500">Division</span>
+            <select
+              className="h-10 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              value={resolved.division_id ?? ""}
+              onChange={(e) => onChange({ ...resolved, division_id: e.target.value, chosen_id: null })}
+            >
+              {divisionsForStd.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <div className="min-w-35">
-          <div className="mb-1 text-xs uppercase text-gray-500">Action</div>
-          <div className="flex gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
-            {(["existing", "create", "skip"] as Mode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => onChange({ ...resolved, mode: m })}
-                className={`flex-1 rounded px-2 py-1 ${
-                  resolved.mode === m ? "bg-indigo-600 text-white" : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                {m === "existing" ? "Map" : m === "create" ? "Create" : "Skip"}
-              </button>
-            ))}
-          </div>
+        {/* Action segmented control */}
+        <div className="lg:col-span-5">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-medium uppercase tracking-wide text-gray-500">Action</span>
+            <div className="grid grid-cols-3 gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
+              {(["existing", "create", "skip"] as Mode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => onChange({ ...resolved, mode: m })}
+                  aria-pressed={resolved.mode === m}
+                  className={`min-h-10 rounded px-2 py-1.5 font-medium ${
+                    resolved.mode === m
+                      ? "bg-indigo-600 text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {m === "existing" ? "Map" : m === "create" ? "Create" : "Skip"}
+                </button>
+              ))}
+            </div>
+          </label>
+
           {resolved.mode === "existing" && resolved.chosen_id && (
-            <div className="mt-2">
-              <div className="text-xs uppercase text-gray-500">On conflict</div>
-              <div className="flex gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
+            <label className="mt-3 flex flex-col gap-1 text-xs">
+              <span className="font-medium uppercase tracking-wide text-gray-500">On conflict</span>
+              <div className="grid grid-cols-2 gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
                 {(["replace", "skip"] as const).map((c) => (
                   <button
                     key={c}
+                    type="button"
                     onClick={() => onChange({ ...resolved, on_conflict: c })}
-                    className={`flex-1 rounded px-2 py-1 ${resolved.on_conflict === c ? "bg-indigo-600 text-white" : "text-gray-700 hover:bg-gray-100"}`}
+                    aria-pressed={resolved.on_conflict === c}
+                    className={`min-h-10 rounded px-2 py-1.5 font-medium ${
+                      resolved.on_conflict === c
+                        ? "bg-indigo-600 text-white"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
                     {c === "replace" ? "Replace" : "Skip"}
                   </button>
                 ))}
               </div>
-            </div>
+            </label>
           )}
         </div>
 
-        <div className="min-w-55 flex-1">
+        {/* Map/Create details — full width beneath */}
+        <div className="min-w-0 lg:col-span-12">
           {resolved.mode === "existing" && (
-            <>
-              <div className="text-xs uppercase text-gray-500">Map to student</div>
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-medium uppercase tracking-wide text-gray-500">Map to student</span>
               <select
-                className="mt-0.5 w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                className="h-10 w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
                 value={resolved.chosen_id ?? ""}
                 onChange={(e) => onChange({ ...resolved, chosen_id: e.target.value || null })}
               >
@@ -709,74 +737,87 @@ function StudentCard({
                 ))}
               </select>
               {resolved.match.status !== "matched" && resolved.match.score > 0 && (
-                <div className="mt-1 text-xs text-gray-500">Match score {(resolved.match.score * 100).toFixed(0)}%</div>
+                <span className="mt-0.5 text-[11px] text-gray-500">
+                  Match score {(resolved.match.score * 100).toFixed(0)}%
+                </span>
               )}
-            </>
+            </label>
           )}
           {resolved.mode === "create" && (
-            <div className="rounded-md border border-indigo-200 bg-indigo-50 p-3">
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
               <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-indigo-700">
                 <UserPlus className="h-3 w-3" /> Create in this division
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <label>Roll no *
-                  <Input className="h-8" required type="number" min={1}
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <label className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-700">Roll no *</span>
+                  <Input required type="number" inputMode="numeric" min={1}
                     value={resolved.newStudent.roll_no === "" ? "" : resolved.newStudent.roll_no}
                     onChange={(e) => onChange({ ...resolved, newStudent: {
                       ...resolved.newStudent,
                       roll_no: e.target.value === "" ? "" : Number(e.target.value),
                     }})} />
                 </label>
-                <label>GR no
-                  <Input className="h-8" value={resolved.newStudent.gr_no}
+                <label className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-700">GR no</span>
+                  <Input value={resolved.newStudent.gr_no}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, gr_no: e.target.value }})} />
                 </label>
-                <label>Parent mobile *
-                  <Input className="h-8" required value={resolved.newStudent.parent_mobile}
+                <label className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-700">Parent mobile *</span>
+                  <Input required inputMode="tel" value={resolved.newStudent.parent_mobile}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, parent_mobile: e.target.value }})} />
                 </label>
-                <label>DOB *
-                  <Input className="h-8" required type="date" value={resolved.newStudent.dob}
+                <label className="flex flex-col gap-1">
+                  <span className="font-medium text-gray-700">DOB *</span>
+                  <Input required type="date" value={resolved.newStudent.dob}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, dob: e.target.value }})} />
                 </label>
               </div>
             </div>
           )}
         </div>
-
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badge.cls}`}>{badge.text}</span>
-
-        <button onClick={() => setOpen((v) => !v)} className="text-xs text-indigo-600 hover:underline">
-          {open ? "Hide" : "Show"} {resolved.raw.subjects.length} papers
-        </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-center gap-1 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs font-medium text-indigo-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      >
+        {open ? "Hide" : "Show"} {resolved.raw.subjects.length} papers
+      </button>
 
       {open && (
         <div className="border-t border-gray-100 p-4">
-          <table className="w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-500">
-              <tr>
-                <th className="py-1 pr-3">#</th>
-                <th className="py-1 pr-3">Date</th>
-                <th className="py-1 pr-3">Subject</th>
-                <th className="py-1 pr-3 text-right">Marks</th>
-                <th className="py-1 pr-3 text-right">Max</th>
-                <th className="py-1">Grade</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resolved.raw.subjects.map((sub, i) => (
-                <tr key={i} className="border-t border-gray-100">
-                  <td className="py-1 pr-3 text-gray-600">{sub.paper_no ?? "-"}</td>
-                  <td className="py-1 pr-3 text-gray-600">{sub.date ?? "-"}</td>
-                  <td className="py-1 pr-3 font-medium text-gray-900">{sub.subject}</td>
-                  <td className="py-1 pr-3 text-right text-gray-800">{sub.marks_obtained ?? <em className="text-gray-400">—</em>}</td>
-                  <td className="py-1 pr-3 text-right text-gray-500">{sub.max_marks ?? "-"}</td>
-                  <td className="py-1 text-gray-700">{sub.grade ?? "-"}</td>
+          <div className="-mx-4 overflow-x-auto sm:mx-0">
+            <table className="w-full min-w-[500px] text-sm">
+              <thead className="text-left text-xs uppercase text-gray-500">
+                <tr>
+                  <th className="py-1 pr-3">#</th>
+                  <th className="py-1 pr-3">Date</th>
+                  <th className="py-1 pr-3">Subject</th>
+                  <th className="py-1 pr-3 text-right">Marks</th>
+                  <th className="py-1 pr-3 text-right">Max</th>
+                  <th className="py-1">Grade</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {resolved.raw.subjects.map((sub, i) => (
+                  <tr key={i} className="border-t border-gray-100">
+                    <td className="py-1 pr-3 tabular-nums text-gray-600">{sub.paper_no ?? "-"}</td>
+                    <td className="py-1 pr-3 tabular-nums text-gray-600">{sub.date ?? "-"}</td>
+                    <td className="py-1 pr-3 font-medium text-gray-900">{sub.subject}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums text-gray-800">
+                      {sub.marks_obtained ?? <em className="text-gray-400">—</em>}
+                    </td>
+                    <td className="py-1 pr-3 text-right tabular-nums text-gray-500">{sub.max_marks ?? "-"}</td>
+                    <td className="py-1 text-gray-700">{sub.grade ?? "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
