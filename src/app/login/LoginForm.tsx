@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -56,6 +57,13 @@ export default function LoginForm() {
       <Button type="submit" size="lg" disabled={busy}>
         {busy ? t(dict.common.loading, lang) : t(dict.login.submit, lang)}
       </Button>
+
+      <Link
+        href="/forgot-password"
+        className="text-center text-sm text-indigo-600 hover:underline"
+      >
+        पासवर्ड विसरलात? · Forgot password?
+      </Link>
     </form>
   );
 }
