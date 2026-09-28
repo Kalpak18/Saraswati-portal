@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useState, useEffect } from "react";
 import {
   LayoutDashboard, Users, GraduationCap, FileSpreadsheet,
-  Settings, LogOut, Menu, X, Download, ChevronDown,
+  Settings, LogOut, Menu, X, Download, ChevronDown, Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
@@ -38,6 +38,7 @@ export default function AdminShell({
     { href: "/admin/students",  label: t(dict.nav.students, lang),  icon: Users },
     { href: "/admin/results",   label: t(dict.nav.results, lang),   icon: FileSpreadsheet },
     { href: "/admin/templates", label: t(dict.nav.templates, lang), icon: Download },
+    { href: "/admin/website",   label: t(dict.nav.website, lang),   icon: Globe },
     { href: "/admin/settings",  label: t(dict.nav.settings, lang),  icon: Settings },
   ];
 

@@ -30,6 +30,7 @@ export const dict = {
     students:  { mr: "विद्यार्थी",  en: "Students" },
     results:   { mr: "निकाल",      en: "Results" },
     templates: { mr: "टेम्पलेट्स",   en: "Templates" },
+    website:   { mr: "वेबसाइट",    en: "Website" },
     settings:  { mr: "सेटिंग्ज",    en: "Settings" },
   },
   dashboard: {
