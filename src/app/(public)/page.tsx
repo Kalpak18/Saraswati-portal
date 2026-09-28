@@ -32,7 +32,7 @@ export default async function HomePage() {
         .limit(3),
       supabase
         .from("toppers")
-        .select("id, rank, note, photo_url, students(id, student_name, gr_no), exams(test_type, academic_year, exam_start_date)")
+        .select("id, rank, note, photo_url, students(id, student_name), exams(test_type, academic_year, exam_start_date)")
         .eq("is_featured", true)
         .order("rank", { ascending: true })
         .limit(8),

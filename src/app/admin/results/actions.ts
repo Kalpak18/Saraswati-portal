@@ -8,7 +8,6 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 // Types shared with the wizard
 // ============================================================
 const NewStudentSchema = z.object({
-  gr_no: z.string().max(50).nullable().optional(),
   roll_no: z.number().int().min(1).max(9999),
   student_name: z.string().min(1).max(200),
   parent_mobile: z.string().min(4).max(20),
@@ -26,7 +25,6 @@ const EntryPayload = z.object({
   subject_name: z.string().min(1),
   paper_no: z.number().int().nullable(),
   marks_obtained: z.number().nullable(),
-  grade: z.string().nullable(),
 });
 
 const StudentSlot = z.union([
@@ -254,7 +252,7 @@ async function saveOneExam(
 
   const studentIdBySlot: (string | null)[] = new Array(p.students.length).fill(null);
   const createRows: { slotIdx: number; payload: {
-    division_id: string; gr_no: string | null; roll_no: number;
+    division_id: string; roll_no: number;
     student_name: string; parent_mobile: string; dob: string;
   } }[] = [];
 
@@ -265,7 +263,6 @@ async function saveOneExam(
         slotIdx: i,
         payload: {
           division_id: p.division_id,
-          gr_no: s.new_student.gr_no || null,
           roll_no: s.new_student.roll_no,
           student_name: s.new_student.student_name,
           parent_mobile: s.new_student.parent_mobile,
@@ -321,7 +318,7 @@ async function saveOneExam(
   // 5. Insert marks
   const markRows: {
     exam_id: string; student_id: string; subject_id: string;
-    marks_obtained: number | null; grade: string | null;
+    marks_obtained: number | null;
     updated_by: string | null; updated_source: string;
   }[] = [];
 
@@ -337,7 +334,6 @@ async function saveOneExam(
         student_id: studentId,
         subject_id: sid,
         marks_obtained: e.marks_obtained,
-        grade: e.grade,
         updated_by: uploaderId,
         updated_source: "upload",
       });
@@ -371,7 +367,6 @@ const UpdatePayload = z.object({
   entries: z.array(z.object({
     subject_id: z.string().uuid(),
     marks_obtained: z.number().nullable(),
-    grade: z.string().nullable(),
   })),
 });
 
@@ -384,7 +379,7 @@ export async function updateStudentMarks(input: unknown) {
   const rows = p.entries.map((e) => ({
     exam_id: p.exam_id, student_id: p.student_id,
     subject_id: e.subject_id,
-    marks_obtained: e.marks_obtained, grade: e.grade,
+    marks_obtained: e.marks_obtained,
     updated_by: uploaderId, updated_source: "manual_edit",
   }));
   const { error } = await supabase.from("marks").upsert(rows, {

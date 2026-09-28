@@ -14,7 +14,6 @@ type Row = {
   paper_date: string | null;
   max_marks: number | null;
   marks_obtained: number | null;
-  grade: string | null;
 };
 
 export default function EditMarksForm({ examId, studentId, rows }: {
@@ -33,7 +32,6 @@ export default function EditMarksForm({ examId, studentId, rows }: {
           entries: state.map((r) => ({
             subject_id: r.subject_id,
             marks_obtained: r.marks_obtained,
-            grade: r.grade,
           })),
         });
         toast.success("Saved");
@@ -45,52 +43,43 @@ export default function EditMarksForm({ examId, studentId, rows }: {
   }
 
   return (
-    <div className="rounded-lg border border-ink-200 bg-white p-4 shadow-sm">
-      <table className="w-full text-sm">
-        <thead className="text-left text-xs uppercase text-ink-500">
-          <tr>
-            <th className="py-1 pr-3">#</th>
-            <th className="py-1 pr-3">Date</th>
-            <th className="py-1 pr-3">Subject</th>
-            <th className="py-1 pr-3 text-right">Max</th>
-            <th className="py-1 pr-3">Marks</th>
-            <th className="py-1 pr-3">Grade</th>
-          </tr>
-        </thead>
-        <tbody>
-          {state.map((r, i) => (
-            <tr key={r.subject_id} className="border-t border-ink-100">
-              <td className="py-1 pr-3 text-ink-600">{r.paper_no ?? "-"}</td>
-              <td className="py-1 pr-3 text-ink-600">{r.paper_date ?? "-"}</td>
-              <td className="py-1 pr-3 font-medium text-ink-900">{r.subject_name}</td>
-              <td className="py-1 pr-3 text-right text-ink-500">{r.max_marks ?? "-"}</td>
-              <td className="py-1 pr-3">
-                <Input
-                  type="number" step="any"
-                  className="h-8 w-24"
-                  value={r.marks_obtained ?? ""}
-                  onChange={(e) => {
-                    const list = [...state];
-                    list[i] = { ...r, marks_obtained: e.target.value === "" ? null : Number(e.target.value) };
-                    setState(list);
-                  }} />
-              </td>
-              <td className="py-1 pr-3">
-                <Input
-                  className="h-8 w-20"
-                  value={r.grade ?? ""}
-                  onChange={(e) => {
-                    const list = [...state];
-                    list[i] = { ...r, grade: e.target.value || null };
-                    setState(list);
-                  }} />
-              </td>
+    <div className="rounded-2xl border border-ink-100 bg-white p-4 shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-left text-xs uppercase tracking-wide text-ink-500">
+            <tr>
+              <th className="py-2 pr-3">#</th>
+              <th className="py-2 pr-3">Date</th>
+              <th className="py-2 pr-3">Subject</th>
+              <th className="py-2 pr-3 text-right">Max</th>
+              <th className="py-2">Marks</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {state.map((r, i) => (
+              <tr key={r.subject_id} className="border-t border-ink-100">
+                <td className="py-2 pr-3 tabular-nums text-ink-600">{r.paper_no ?? "-"}</td>
+                <td className="py-2 pr-3 tabular-nums text-ink-600">{r.paper_date ?? "-"}</td>
+                <td className="py-2 pr-3 font-medium text-ink-900">{r.subject_name}</td>
+                <td className="py-2 pr-3 text-right tabular-nums text-ink-500">{r.max_marks ?? "-"}</td>
+                <td className="py-2">
+                  <Input
+                    type="number" step="any"
+                    className="h-9 w-24"
+                    value={r.marks_obtained ?? ""}
+                    onChange={(e) => {
+                      const list = [...state];
+                      list[i] = { ...r, marks_obtained: e.target.value === "" ? null : Number(e.target.value) };
+                      setState(list);
+                    }} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="mt-4 flex justify-end">
-        <Button onClick={onSave} disabled={pending}>{pending ? "Saving…" : "Save"}</Button>
+        <Button onClick={onSave} loading={pending}>Save</Button>
       </div>
     </div>
   );

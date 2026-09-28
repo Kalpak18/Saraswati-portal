@@ -1,53 +1,45 @@
 "use client";
 
 import * as XLSX from "xlsx";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 
-// ============================================================
-// All templates ship EMPTY: headers + blank rows ready to type into.
-// A separate "How to fill" sheet inside each workbook explains every column
-// and shows a filled sample.
-// ============================================================
-
-function saveWorkbook(wb: XLSX.WorkBook, filename: string) {
-  XLSX.writeFile(wb, filename, { compression: true });
+function download(wb: XLSX.WorkBook, name: string) {
+  XLSX.writeFile(wb, name);
 }
 
-const BLANK_ROW_COUNT_ROSTER = 60;   // one class ≈ 30–60 students
-const BLANK_PAPER_ROWS       = 20;   // enough for a full weekly/semester exam
-const BULK_STUDENT_BLOCKS    = 10;   // 10 empty student blocks in bulk-stacked
-const BULK_MULTI_SHEETS      = 10;   // 10 empty per-student sheets
+const BLANK_ROW_COUNT_ROSTER = 60;
+const BLANK_PAPER_ROWS       = 20;
+const BULK_STUDENT_BLOCKS    = 10;
+const BULK_MULTI_SHEETS      = 10;
 
 // ------------------------------------------------------------
-// 1. Students roster — bulk-add students to a division
+// 1. Students roster
 // ------------------------------------------------------------
 function studentsRosterTemplate() {
   const rows: unknown[][] = [
-    ["gr_no", "roll_no", "student_name", "parent_mobile", "dob", "gender", "admission_date"],
+    ["roll_no", "student_name", "parent_mobile", "dob", "gender"],
   ];
-  for (let i = 0; i < BLANK_ROW_COUNT_ROSTER; i++) rows.push(["", "", "", "", "", "", ""]);
+  for (let i = 0; i < BLANK_ROW_COUNT_ROSTER; i++) rows.push(["", "", "", "", ""]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"] = [
-    { wch: 12 }, { wch: 8 }, { wch: 32 }, { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 15 },
-  ];
+  ws["!cols"] = [{ wch: 8 }, { wch: 32 }, { wch: 15 }, { wch: 12 }, { wch: 8 }];
 
   const notes = XLSX.utils.aoa_to_sheet([
     ["Students roster — how to fill"],
     [""],
     ["Column",         "Required?", "Notes"],
-    ["gr_no",          "Optional",  "General-Register / admission number. Unique across school if provided."],
     ["roll_no",        "Required",  "Integer. Unique within a division."],
     ["student_name",   "Required",  "Marathi / English — both OK."],
     ["parent_mobile",  "Required",  "Text — preserves leading zeros / +91 codes."],
     ["dob",            "Required",  "YYYY-MM-DD or DD/MM/YYYY or Excel date cell."],
     ["gender",         "Optional",  "M / F / Other."],
-    ["admission_date", "Optional",  "Same date formats as DOB."],
     [""],
     ["Sample filled row:"],
-    ["gr_no", "roll_no", "student_name", "parent_mobile", "dob", "gender", "admission_date"],
-    ["1023", 1, "कु. भालेराव साक्षी संदीप", "9876543210", "2010-05-14", "F", "2024-06-15"],
+    ["roll_no", "student_name", "parent_mobile", "dob", "gender"],
+    [1, "कु. भालेराव साक्षी संदीप", "9876543210", "2010-05-14", "F"],
     [""],
     ["Behaviour:"],
     ["• Save the file, then upload at: Students → Import Excel (after picking a division)."],
@@ -62,22 +54,21 @@ function studentsRosterTemplate() {
 }
 
 // ------------------------------------------------------------
-// 2. Result — single student (empty)
+// 2. Result — single student
 // ------------------------------------------------------------
 function resultSingleTemplate() {
   const wb = XLSX.utils.book_new();
   const rows: unknown[][] = [
-    ["10 वी आठवडी परीक्षा 2026-27"],       // ← edit: class + test type + year
-    ["विद्यार्थ्याचे नाव : "],               // ← type student name after ":"
-    ["हजेरी क्र. : "],                       // ← type Roll No after ":"
-    ["तुकडी : "],                            // ← type Division letter after ":" (अ/A/…)
-    ["GR क्र. : "],                          // ← optional: GR / admission no.
-    ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण", "Grade"],
+    ["10 वी आठवडी परीक्षा 2026-27"],
+    ["विद्यार्थ्याचे नाव : "],
+    ["हजेरी क्र. : "],
+    ["तुकडी : "],
+    ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण"],
   ];
-  for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", "", ""]);
+  for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", ""]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 8 }];
+  ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }];
   XLSX.utils.book_append_sheet(wb, ws, "Result");
 
   const notes = XLSX.utils.aoa_to_sheet([
@@ -87,21 +78,16 @@ function resultSingleTemplate() {
     ["Row 2", "विद्यार्थ्याचे नाव : <name> — type the student's name after the colon."],
     ["Row 3", "हजेरी क्र. : <roll no> — Roll No (Marathi/English digits both fine)."],
     ["Row 4", "तुकडी : <division> — Division (अ/A, ब/B, क/C, ड/D — either language)."],
-    ["Row 5", "GR क्र. : <gr no> — OPTIONAL. Best identifier when available."],
-    ["Row 6", "Column headers — leave as-is."],
-    ["Row 7+", "One row per paper. Fill:"],
+    ["Row 5", "Column headers — leave as-is."],
+    ["Row 6+", "One row per paper. Fill:"],
     ["",      "  • दिनांक — date of the paper (YYYY-MM-DD or Excel date)"],
     ["",      "  • विषय — subject name"],
     ["",      "  • गुण — marks obtained (leave blank if absent)"],
     ["",      "  • पैकी गुण — max marks for this paper"],
-    ["",      "  • Grade — optional. Free text (A+, A, B+, %, etc.) — stored as typed."],
-    [""],
-    ["Extra rows in the template are placeholder blanks — delete the unused ones or leave them empty."],
-    ["Only rows with a subject filled in are saved. Empty rows are ignored."],
     [""],
     ["Sample filled row:"],
-    ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण", "Grade"],
-    [1, "2026-07-27", "Science 1", 26, 40, "B+"],
+    ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण"],
+    [1, "2026-07-27", "Science 1", 26, 40],
   ]);
   notes["!cols"] = [{ wch: 10 }, { wch: 80 }];
   XLSX.utils.book_append_sheet(wb, notes, "How to fill");
@@ -109,7 +95,7 @@ function resultSingleTemplate() {
 }
 
 // ------------------------------------------------------------
-// 3. Result — bulk (stacked): N empty student blocks in one sheet
+// 3. Result — bulk (stacked)
 // ------------------------------------------------------------
 function resultBulkStackedTemplate() {
   const wb = XLSX.utils.book_new();
@@ -120,14 +106,13 @@ function resultBulkStackedTemplate() {
     rows.push(["विद्यार्थ्याचे नाव : "]);
     rows.push(["हजेरी क्र. : "]);
     rows.push(["तुकडी : "]);
-    rows.push(["GR क्र. : "]);
-    rows.push(["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण", "Grade"]);
-    for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", "", ""]);
-    rows.push([]); // blank separator
+    rows.push(["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण"]);
+    for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", ""]);
+    rows.push([]);
   }
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 8 }];
+  ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }];
   XLSX.utils.book_append_sheet(wb, ws, "Result-Bulk-Stacked");
 
   const notes = XLSX.utils.aoa_to_sheet([
@@ -138,10 +123,9 @@ function resultBulkStackedTemplate() {
     ["  Row A: <Standard> <Test type> <Year>"],
     ["  Row B: विद्यार्थ्याचे नाव : <student name>"],
     ["  Row C: हजेरी क्र. : <roll no>"],
-    ["  Row D: तुकडी : <division letter> — allows one file to contain students from many divisions"],
-    ["  Row E: GR क्र. : <gr no> — optional"],
-    ["  Row F: column headers"],
-    ["  Row G+: paper rows, then a blank row separator"],
+    ["  Row D: तुकडी : <division letter>"],
+    ["  Row E: column headers"],
+    ["  Row F+: paper rows, then a blank row separator"],
     [""],
     ["Add more blocks by copying an existing one — the parser handles any number."],
     ["Names are matched to your class roster automatically. Any unmatched name can be:"],
@@ -157,7 +141,7 @@ function resultBulkStackedTemplate() {
 }
 
 // ------------------------------------------------------------
-// 4. Result — bulk (multi-sheet): one sheet per student
+// 4. Result — bulk (multi-sheet)
 // ------------------------------------------------------------
 function resultBulkMultiSheetTemplate() {
   const wb = XLSX.utils.book_new();
@@ -168,14 +152,12 @@ function resultBulkMultiSheetTemplate() {
       ["विद्यार्थ्याचे नाव : "],
       ["हजेरी क्र. : "],
       ["तुकडी : "],
-      ["GR क्र. : "],
-      ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण", "Grade"],
+      ["पेपर क्र.", "दिनांक", "विषय", "गुण", "पैकी गुण"],
     ];
-    for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", "", ""]);
+    for (let i = 1; i <= BLANK_PAPER_ROWS; i++) rows.push([i, "", "", "", ""]);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }, { wch: 8 }];
-    // Rename each sheet to the student's name once you fill it in.
+    ws["!cols"] = [{ wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 8 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, ws, `Student ${s}`);
   }
 
@@ -198,59 +180,65 @@ function resultBulkMultiSheetTemplate() {
   return wb;
 }
 
-// ============================================================
+// ------------------------------------------------------------
 // UI
-// ============================================================
-const CARDS = [
+// ------------------------------------------------------------
+const TEMPLATES = [
   {
     title: "Students roster",
-    desc: "Empty roster. Fill rows, then use it at Students → Import Excel.",
-    filename: "Template-Students-Roster.xlsx",
+    description: "Bulk-add students. Columns: roll_no, student_name, parent_mobile, dob, gender.",
+    filename: "students-roster.xlsx",
     build: studentsRosterTemplate,
   },
   {
     title: "Result — single student",
-    desc: "One file, one student, empty paper rows.",
-    filename: "Template-Result-Single-Student.xlsx",
+    description: "Blank result template for one student. Use for weekly-test files.",
+    filename: "result-single-student.xlsx",
     build: resultSingleTemplate,
   },
   {
     title: "Result — bulk (stacked)",
-    desc: `${BULK_STUDENT_BLOCKS} empty student blocks in one sheet. Copy blocks for more.`,
-    filename: "Template-Result-Bulk-Stacked.xlsx",
+    description: "Multiple student blocks stacked vertically inside one sheet.",
+    filename: "result-bulk-stacked.xlsx",
     build: resultBulkStackedTemplate,
   },
   {
     title: "Result — bulk (multi-sheet)",
-    desc: `${BULK_MULTI_SHEETS} empty per-student sheets. Rename tabs to student names.`,
-    filename: "Template-Result-Bulk-MultiSheet.xlsx",
+    description: "One sheet per student — good for classes with many papers.",
+    filename: "result-bulk-multisheet.xlsx",
     build: resultBulkMultiSheetTemplate,
   },
 ];
 
 export default function TemplatesClient() {
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold text-ink-900">Templates</h1>
-        <p className="mt-1 text-sm text-ink-500">
-          Download → open in Excel / LibreOffice → fill the rows → upload back into the app.
-          Every template has a <b>How to fill</b> sheet inside.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {CARDS.map((c) => (
-          <div key={c.filename} className="rounded-lg border border-ink-200 bg-white p-5 shadow-sm">
-            <div className="mb-3">
-              <div className="font-semibold text-ink-900">{c.title}</div>
-              <div className="text-xs text-ink-500">{c.desc}</div>
+    <div className="mx-auto max-w-5xl">
+      <PageHeader
+        title="Templates"
+        description="Download ready-to-fill Excel files for students and results."
+      />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {TEMPLATES.map((t) => (
+          <Card key={t.filename}>
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+                <FileSpreadsheet className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display text-base font-semibold text-ink-900">{t.title}</h3>
+                <p className="mt-1 text-sm text-ink-600">{t.description}</p>
+                <div className="mt-4">
+                  <Button
+                    size="sm"
+                    leftIcon={<Download className="h-4 w-4" />}
+                    onClick={() => download(t.build(), t.filename)}
+                  >
+                    Download
+                  </Button>
+                </div>
+              </div>
             </div>
-            <Button variant="secondary" onClick={() => saveWorkbook(c.build(), c.filename)}>
-              <Download className="mr-1 h-4 w-4" /> Download
-            </Button>
-            <div className="mt-2 text-[10px] text-ink-400 break-all">{c.filename}</div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

@@ -23,7 +23,7 @@ export default async function StudentsPage(props: PageProps<"/admin/students">) 
   const { data: students } = selectedDivisionId
     ? await supabase
         .from("students")
-        .select("id, gr_no, roll_no, student_name, parent_mobile, dob, gender, admission_date, is_active")
+        .select("id, roll_no, student_name, parent_mobile, dob, gender, is_active")
         .eq("division_id", selectedDivisionId)
         .order("roll_no", { ascending: true })
     : { data: [] };

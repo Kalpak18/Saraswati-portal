@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Quote } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { EyebrowLabel } from "../components/EyebrowLabel";
 
@@ -12,9 +12,8 @@ export default function HomeWelcome() {
   return (
     <section className="relative py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-14 lg:grid-cols-12 lg:gap-16">
-          {/* Left — headline + copy */}
-          <div className="lg:col-span-7">
+        <div className="mx-auto max-w-3xl">
+          <div>
             <EyebrowLabel>{t("आमच्याबद्दल", "About the school")}</EyebrowLabel>
             <h2 className="mt-4 font-display text-4xl font-semibold leading-tight tracking-tight text-ink-900 sm:text-5xl">
               {t(
@@ -55,33 +54,6 @@ export default function HomeWelcome() {
             </div>
           </div>
 
-          {/* Right — leader quote card */}
-          <div className="relative lg:col-span-5">
-            <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-50 via-white to-accent-50 p-8 shadow-lg shadow-brand-950/5 ring-1 ring-brand-100">
-              <Quote className="absolute -right-4 -top-4 h-32 w-32 text-brand-100" strokeWidth={1} />
-              <div className="relative">
-                <p className="font-display text-xl leading-relaxed text-ink-800 sm:text-2xl">
-                  {t(
-                    "\"शिक्षण म्हणजे केवळ पदवी नाही — ती जीवनासाठीची तयारी आहे. आम्ही आमच्या मुलांना विचार करायला, स्वप्नं पाहायला आणि प्रयत्न करायला शिकवतो.\"",
-                    "\"Education is not a certificate — it is preparation for life. We teach our children to think, to dream, and to try.\"",
-                  )}
-                </p>
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-700 text-lg font-semibold text-white ring-4 ring-white">
-                    P
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-ink-900">
-                      {t("मुख्याध्यापक", "The Principal")}
-                    </div>
-                    <div className="text-xs text-ink-500">
-                      {t("संदेश", "A note to parents")}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

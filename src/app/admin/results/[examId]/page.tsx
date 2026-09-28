@@ -21,7 +21,7 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
 
   const { data: students } = await supabase
     .from("students")
-    .select("id, roll_no, student_name, gr_no")
+    .select("id, roll_no, student_name")
     .eq("division_id", exam.division_id)
     .order("roll_no", { ascending: true });
 
@@ -69,7 +69,6 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
         head={
           <>
             <th className="px-4 py-3">Roll</th>
-            <th className="px-4 py-3">GR No</th>
             <th className="px-4 py-3">Name</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3 text-right">Actions</th>
@@ -83,7 +82,6 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
             cells: (
               <>
                 <td className="px-4 py-3 tabular-nums text-ink-700">{s.roll_no}</td>
-                <td className="px-4 py-3 text-ink-500">{s.gr_no ?? "—"}</td>
                 <td className="px-4 py-3 font-medium text-ink-900">{s.student_name}</td>
                 <td className="px-4 py-3">
                   {hasMarks
@@ -124,7 +122,7 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
-                      Roll {s.roll_no}{s.gr_no ? ` · GR ${s.gr_no}` : ""}
+                      Roll {s.roll_no}
                     </div>
                     <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
                       {s.student_name}

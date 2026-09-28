@@ -20,7 +20,6 @@ type Div = { id: string; standard_id: string; name: string };
 type Mode = "existing" | "create" | "skip";
 
 type NewStudentForm = {
-  gr_no: string;
   roll_no: number | "";
   parent_mobile: string;
   dob: string;
@@ -53,7 +52,7 @@ type StepB = {
 type StepC = { kind: "done"; count: number; created: number; examsCreated: number };
 
 const emptyNewStudent = (rollHint?: number): NewStudentForm => ({
-  gr_no: "", roll_no: rollHint ?? "", parent_mobile: "", dob: "",
+  roll_no: rollHint ?? "", parent_mobile: "", dob: "",
 });
 
 // SHA-256 → hex; used as idempotency key
@@ -119,7 +118,7 @@ export default function UploadWizard({
 
       const { data: rosterRows, error } = await supabase
         .from("students")
-        .select("id, roll_no, student_name, gr_no, division_id")
+        .select("id, roll_no, student_name, division_id")
         .in("division_id", divs.map((d) => d.id));
       if (error) { toast.error(error.message); setBusy(false); return; }
 
@@ -128,15 +127,6 @@ export default function UploadWizard({
       for (const r of rosterRows ?? []) {
         rostersByDivision[r.division_id]?.push({ id: r.id, roll_no: r.roll_no, name: r.student_name });
       }
-      const rosterByIdMap = new Map(
-        (rosterRows ?? []).map((r) => [r.id, {
-          id: r.id, roll_no: r.roll_no, name: r.student_name,
-          gr_no: r.gr_no as string | null, division_id: r.division_id as string,
-        }]),
-      );
-      const rosterByGr = new Map(
-        (rosterRows ?? []).filter((r) => r.gr_no).map((r) => [String(r.gr_no).trim(), r.id]),
-      );
 
       const divIdByCanonical = new Map<string, string>();
       for (const d of divs) {
@@ -150,23 +140,7 @@ export default function UploadWizard({
         const roster = rostersByDivision[routedDivisionId] ?? [];
         const maxRoll = roster.reduce((m, c) => Math.max(m, c.roll_no), 0);
 
-        // priority 1: GR
-        if (s.gr_no) {
-          const hit = rosterByGr.get(s.gr_no.trim());
-          if (hit) {
-            const info = rosterByIdMap.get(hit)!;
-            return {
-              raw: s,
-              match: { status: "matched" as const, student_id: hit, score: 1, candidates: [{ id: hit, roll_no: info.roll_no, name: info.name }] },
-              mode: "existing",
-              division_id: info.division_id,
-              chosen_id: hit,
-              newStudent: emptyNewStudent(maxRoll + 1),
-              on_conflict: "replace",
-            };
-          }
-        }
-        // priority 2: roll + division
+        // priority 1: roll + division
         if (s.roll_no != null && targetDivisionId) {
           const hit = roster.find((c) => c.roll_no === s.roll_no);
           if (hit) {
@@ -181,7 +155,7 @@ export default function UploadWizard({
             };
           }
         }
-        // priority 3: fuzzy
+        // priority 2: fuzzy
         const m = matchStudent(s.raw_student_name, roster);
         const mode: Mode = m.status === "matched" ? "existing" : m.status === "review" ? "existing" : "skip";
         return {
@@ -435,7 +409,6 @@ export default function UploadWizard({
               subject_name: sub.subject,
               paper_no: sub.paper_no,
               marks_obtained: sub.marks_obtained,
-              grade: sub.grade,
             }));
             const on_conflict = r.on_conflict;
             if (r.mode === "existing") {
@@ -444,7 +417,6 @@ export default function UploadWizard({
             return {
               mode: "create" as const,
               new_student: {
-                gr_no: r.newStudent.gr_no || null,
                 roll_no: Number(r.newStudent.roll_no),
                 student_name: r.raw.raw_student_name.replace(/^(कु\.?|कुमारी|कुमार|श्री\.?|सौ\.?)\s+/i, "").trim() || r.raw.raw_student_name,
                 parent_mobile: r.newStudent.parent_mobile,
@@ -653,7 +625,6 @@ function StudentCard({
           <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-ink-500">
             {resolved.raw.roll_no != null && <span>Roll #{resolved.raw.roll_no}</span>}
             {resolved.raw.division_canonical && <span>Div {displayDivision(resolved.raw.division_canonical, "mr")}</span>}
-            {resolved.raw.gr_no && <span>GR {resolved.raw.gr_no}</span>}
             {resolved.raw.test_type && <span className="text-brand-700">Test: {resolved.raw.test_type}</span>}
           </div>
         </div>
@@ -759,16 +730,11 @@ function StudentCard({
                     }})} />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-medium text-ink-700">GR no</span>
-                  <Input value={resolved.newStudent.gr_no}
-                    onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, gr_no: e.target.value }})} />
-                </label>
-                <label className="flex flex-col gap-1">
                   <span className="font-medium text-ink-700">Parent mobile *</span>
                   <Input required inputMode="tel" value={resolved.newStudent.parent_mobile}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, parent_mobile: e.target.value }})} />
                 </label>
-                <label className="flex flex-col gap-1">
+                <label className="flex flex-col gap-1 sm:col-span-2">
                   <span className="font-medium text-ink-700">DOB *</span>
                   <Input required type="date" value={resolved.newStudent.dob}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, dob: e.target.value }})} />
@@ -791,15 +757,14 @@ function StudentCard({
       {open && (
         <div className="border-t border-ink-100 p-4">
           <div className="-mx-4 overflow-x-auto sm:mx-0">
-            <table className="w-full min-w-[500px] text-sm">
+            <table className="w-full min-w-[420px] text-sm">
               <thead className="text-left text-xs uppercase text-ink-500">
                 <tr>
                   <th className="py-1 pr-3">#</th>
                   <th className="py-1 pr-3">Date</th>
                   <th className="py-1 pr-3">Subject</th>
                   <th className="py-1 pr-3 text-right">Marks</th>
-                  <th className="py-1 pr-3 text-right">Max</th>
-                  <th className="py-1">Grade</th>
+                  <th className="py-1 text-right">Max</th>
                 </tr>
               </thead>
               <tbody>
@@ -811,8 +776,7 @@ function StudentCard({
                     <td className="py-1 pr-3 text-right tabular-nums text-ink-800">
                       {sub.marks_obtained ?? <em className="text-ink-400">—</em>}
                     </td>
-                    <td className="py-1 pr-3 text-right tabular-nums text-ink-500">{sub.max_marks ?? "-"}</td>
-                    <td className="py-1 text-ink-700">{sub.grade ?? "-"}</td>
+                    <td className="py-1 text-right tabular-nums text-ink-500">{sub.max_marks ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>

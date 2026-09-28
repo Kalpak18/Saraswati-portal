@@ -19,7 +19,7 @@ export default function HomeToppers({ toppers }: { toppers: Topper[] }) {
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
 
   const rows = toppers.map((r) => {
-    const student = r.students as { id: string; student_name: string; gr_no: string | null } | null;
+    const student = r.students as { id: string; student_name: string } | null;
     const exam = r.exams as { test_type: string; academic_year: string; exam_start_date: string | null } | null;
     return {
       id: r.id,

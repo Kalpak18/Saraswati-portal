@@ -1,6 +1,6 @@
 // Pure server component — no client JS needed.
 // Renders in the same layout as the school's Excel: header + logo, exam title,
-// student name, paper table (as-in-file), signature lines. Print-ready.
+// student name, paper table (as-in-file). Print-ready.
 
 export type ReportCardData = {
   school: { name: string; address: string; logo_url: string | null };
@@ -8,14 +8,13 @@ export type ReportCardData = {
   test_type: string;
   academic_year: string;
   exam_date: string | null;
-  student: { roll_no: number; name: string; gr_no?: string | null };
+  student: { roll_no: number; name: string };
   papers: {
     paper_no: number | null;
     paper_date: string | null;
     subject_name: string;
     marks_obtained: number | null;
     max_marks: number | null;
-    grade: string | null;
   }[];
 };
 
@@ -50,21 +49,14 @@ export function ReportCard({ data }: { data: ReportCardData }) {
         <div>
           <b>विद्यार्थ्याचे नाव :</b> {data.student.name}
         </div>
-        <div className="flex flex-wrap gap-3 sm:gap-4">
-          <div>
-            <b>हजेरी क्र.:</b> <span className="tabular-nums">{data.student.roll_no}</span>
-          </div>
-          {data.student.gr_no && (
-            <div>
-              <b>GR No.:</b> <span className="tabular-nums">{data.student.gr_no}</span>
-            </div>
-          )}
+        <div>
+          <b>हजेरी क्र.:</b> <span className="tabular-nums">{data.student.roll_no}</span>
         </div>
       </div>
 
       {/* Paper table — horizontally scrolled on mobile, full width on print/laptop */}
       <div className="-mx-4 overflow-x-auto sm:mx-0 print:mx-0 print:overflow-visible">
-        <table className="w-full min-w-[500px] border-collapse border border-ink-900 text-xs sm:text-sm">
+        <table className="w-full min-w-[420px] border-collapse border border-ink-900 text-xs sm:text-sm">
           <thead>
             <tr className="bg-ink-100">
               <th className="border border-ink-900 px-2 py-1 text-left">पेपर क्र</th>
@@ -72,7 +64,6 @@ export function ReportCard({ data }: { data: ReportCardData }) {
               <th className="border border-ink-900 px-2 py-1 text-left">विषय</th>
               <th className="border border-ink-900 px-2 py-1 text-right">गुण</th>
               <th className="border border-ink-900 px-2 py-1 text-right">पैकी गुण</th>
-              <th className="border border-ink-900 px-2 py-1 text-center">Grade</th>
             </tr>
           </thead>
           <tbody>
@@ -83,18 +74,10 @@ export function ReportCard({ data }: { data: ReportCardData }) {
                 <td className="border border-ink-900 px-2 py-1">{p.subject_name}</td>
                 <td className="border border-ink-900 px-2 py-1 text-right tabular-nums">{p.marks_obtained ?? ""}</td>
                 <td className="border border-ink-900 px-2 py-1 text-right tabular-nums">{p.max_marks ?? ""}</td>
-                <td className="border border-ink-900 px-2 py-1 text-center">{p.grade ?? ""}</td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* Signatures */}
-      <div className="mt-10 grid grid-cols-1 gap-4 text-center text-xs text-ink-700 sm:mt-12 sm:grid-cols-3 sm:gap-6 print:grid-cols-3">
-        <div className="border-t border-ink-500 pt-1">वर्गशिक्षक</div>
-        <div className="border-t border-ink-500 pt-1">मुख्याध्यापक</div>
-        <div className="border-t border-ink-500 pt-1">पालक स्वाक्षरी</div>
       </div>
     </div>
   );

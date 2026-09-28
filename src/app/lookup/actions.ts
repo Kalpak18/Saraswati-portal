@@ -12,7 +12,6 @@ const LookupSchema = z.object({
 export type LookupStudent = {
   id: string;
   roll_no: number;
-  gr_no: string | null;
   student_name: string;
   standard_name: string;
   division_name: string;
@@ -35,7 +34,7 @@ export type LookupExam = {
 };
 
 const STUDENT_FIELDS =
-  "id, roll_no, gr_no, student_name, division_id, divisions(name, standards(name, academic_year))";
+  "id, roll_no, student_name, division_id, divisions(name, standards(name, academic_year))";
 
 export async function findStudents(input: unknown): Promise<LookupStudent[]> {
   const parsed = LookupSchema.safeParse(input);
@@ -91,7 +90,6 @@ export async function findStudents(input: unknown): Promise<LookupStudent[]> {
     return {
       id: s.id,
       roll_no: s.roll_no,
-      gr_no: s.gr_no ?? null,
       student_name: s.student_name,
       standard_name,
       division_name,

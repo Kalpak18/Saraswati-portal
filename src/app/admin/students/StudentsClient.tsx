@@ -21,27 +21,23 @@ type Div = { id: string; standard_id: string; name: string };
 
 type Student = {
   id: string;
-  gr_no: string | null;
   roll_no: number;
   student_name: string;
   parent_mobile: string;
   dob: string;
   gender: string | null;
-  admission_date: string | null;
   is_active: boolean;
 };
 
 type EditState = {
   id?: string;
   division_id: string;
-  gr_no: string;
   roll_no: number | "";
   student_name: string;
   parent_country: Country;
   parent_mobile_local: string;
   dob: string;
   gender: string;
-  admission_date: string;
   is_active: boolean;
 };
 
@@ -87,8 +83,7 @@ export default function StudentsClient({
     if (!q) return students;
     return students.filter((s) =>
       s.student_name.toLowerCase().includes(q) ||
-      String(s.roll_no).includes(q) ||
-      (s.gr_no ?? "").toLowerCase().includes(q),
+      String(s.roll_no).includes(q),
     );
   }, [query, students]);
 
@@ -99,11 +94,11 @@ export default function StudentsClient({
   function openAdd() {
     if (!selectedDivisionId) { toast.error("Add a standard + division first"); return; }
     setEditing({
-      division_id: selectedDivisionId, gr_no: "", roll_no: "",
+      division_id: selectedDivisionId, roll_no: "",
       student_name: "",
       parent_country: DEFAULT_COUNTRY, parent_mobile_local: "",
       dob: "",
-      gender: "", admission_date: "", is_active: true,
+      gender: "", is_active: true,
     });
     setEditOpen(true);
   }
@@ -111,12 +106,10 @@ export default function StudentsClient({
     const { country, local } = splitMobile(s.parent_mobile);
     setEditing({
       id: s.id, division_id: selectedDivisionId,
-      gr_no: s.gr_no ?? "",
       roll_no: s.roll_no, student_name: s.student_name,
       parent_country: country, parent_mobile_local: local,
       dob: s.dob,
       gender: s.gender ?? "",
-      admission_date: s.admission_date ?? "",
       is_active: s.is_active,
     });
     setEditOpen(true);
@@ -136,12 +129,10 @@ export default function StudentsClient({
       try {
         await saveStudent({
           id: editing.id, division_id: editing.division_id,
-          gr_no: editing.gr_no || null,
           roll_no: Number(editing.roll_no),
           student_name: editing.student_name,
           parent_mobile, dob: editing.dob,
           gender: editing.gender || null,
-          admission_date: editing.admission_date || null,
           is_active: editing.is_active,
         });
         setEditOpen(false);
@@ -186,21 +177,18 @@ export default function StudentsClient({
     const cleaned: unknown[] = [];
     const errors: string[] = [];
     rows.forEach((r, i) => {
-      const gr = String(r.gr_no ?? r["GR No"] ?? r["GR"] ?? "").trim();
       const roll = Number(r.roll_no ?? r["Roll No"] ?? r["roll no"]);
       const name = String(r.student_name ?? r["Student Name"] ?? r.name ?? "").trim();
       const mobile = String(r.parent_mobile ?? r["Parent Mobile"] ?? r.mobile ?? "").trim();
       const dob = excelDateToISO(r.dob ?? r["DOB"] ?? r["Date of Birth"]);
       const gender = String(r.gender ?? r["Gender"] ?? "").trim();
-      const adm = excelDateToISO(r.admission_date ?? r["Admission Date"] ?? "");
       if (!roll || !name || !mobile || !dob) {
         errors.push(`Row ${i + 2}: missing required fields`);
         return;
       }
       cleaned.push({
-        gr_no: gr || null,
         roll_no: roll, student_name: name, parent_mobile: mobile, dob,
-        gender: gender || null, admission_date: adm || null,
+        gender: gender || null,
       });
     });
 
@@ -266,7 +254,7 @@ export default function StudentsClient({
         <label className="flex flex-1 flex-col gap-1 text-xs">
           <span className="font-medium uppercase tracking-wide text-ink-500">Search</span>
           <Input
-            placeholder="Name, roll, or GR"
+            placeholder="Name or roll number"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             leftAdornment={<Search className="h-4 w-4" />}
@@ -279,7 +267,6 @@ export default function StudentsClient({
         head={
           <>
             <th className="px-3 py-3">Roll</th>
-            <th className="px-3 py-3">GR No</th>
             <th className="px-3 py-3">Name</th>
             <th className="px-3 py-3">Parent mobile</th>
             <th className="px-3 py-3">DOB</th>
@@ -315,7 +302,6 @@ export default function StudentsClient({
           cells: (
             <>
               <td className="px-3 py-2 text-ink-700 tabular-nums">{s.roll_no}</td>
-              <td className="px-3 py-2 text-ink-500">{s.gr_no ?? "—"}</td>
               <td className="px-3 py-2 font-medium text-ink-900">{s.student_name}</td>
               <td className="px-3 py-2 tabular-nums text-ink-700">{s.parent_mobile}</td>
               <td className="px-3 py-2 text-ink-700 tabular-nums">{s.dob}</td>
@@ -342,7 +328,7 @@ export default function StudentsClient({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
-                    Roll {s.roll_no}{s.gr_no ? ` · GR ${s.gr_no}` : ""}
+                    Roll {s.roll_no}
                   </div>
                   <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
                     {s.student_name}
@@ -392,16 +378,11 @@ export default function StudentsClient({
       >
         {editing && (
           <form onSubmit={onSave} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
               <span className="font-medium text-ink-700">Roll no *</span>
               <Input required type="number" min={1}
                 value={editing.roll_no === "" ? "" : editing.roll_no}
                 onChange={(e) => setEditing({ ...editing, roll_no: e.target.value === "" ? "" : Number(e.target.value) })} />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-ink-700">GR no</span>
-              <Input value={editing.gr_no}
-                onChange={(e) => setEditing({ ...editing, gr_no: e.target.value })} />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
               <span className="font-medium text-ink-700">Name *</span>
@@ -449,11 +430,6 @@ export default function StudentsClient({
                 <option value="Other">Other</option>
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-ink-700">Admission date</span>
-              <Input type="date" value={editing.admission_date}
-                onChange={(e) => setEditing({ ...editing, admission_date: e.target.value })} />
-            </label>
             <label className="inline-flex items-center gap-2 text-sm sm:col-span-2">
               <input
                 type="checkbox"
@@ -480,13 +456,11 @@ export default function StudentsClient({
       >
         <div className="flex flex-col gap-4 text-sm">
           <p className="text-ink-600">
-            Columns: <code className="rounded bg-ink-100 px-1 text-xs">gr_no</code>,{" "}
-            <code className="rounded bg-ink-100 px-1 text-xs">roll_no</code>,{" "}
+            Columns: <code className="rounded bg-ink-100 px-1 text-xs">roll_no</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">student_name</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">parent_mobile</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">dob</code>,{" "}
-            <code className="rounded bg-ink-100 px-1 text-xs">gender</code>,{" "}
-            <code className="rounded bg-ink-100 px-1 text-xs">admission_date</code>.
+            <code className="rounded bg-ink-100 px-1 text-xs">gender</code>.
             Dates in YYYY-MM-DD or DD/MM/YYYY.
           </p>
           <p className="text-xs text-ink-500">
