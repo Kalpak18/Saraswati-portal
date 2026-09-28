@@ -14,20 +14,13 @@ const ContactSchema = z.object({
   message: z.string().min(5, "Message too short").max(4000),
 });
 
-/** Public form submit — insert-only via anon RLS. */
 export async function submitContactMessage(input: unknown) {
   const parsed = ContactSchema.safeParse(input);
-  if (!parsed.success) {
-    throw new Error(parsed.error.issues[0].message);
-  }
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
   const p = parsed.data;
 
-  // Best-effort spam signal (hashed, no raw IP kept).
   const h = await headers();
-  const rawIp =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    h.get("x-real-ip") ??
-    "";
+  const rawIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "";
   const ip_hash = rawIp
     ? createHash("sha256").update(rawIp + "|" + env.IP_HASH_SALT).digest("hex")
     : null;

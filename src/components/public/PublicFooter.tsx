@@ -1,96 +1,119 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 
 export function PublicFooter({
   school,
 }: {
-  school: { name: string | null; address: string | null };
+  school: { name: string | null; address: string | null; logo_url: string | null };
 }) {
   const { lang } = useLang();
+  const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
   const name = school.name || "Saraswati School";
   const year = new Date().getFullYear();
 
-  const nav: { href: string; label: string }[] = [
-    { href: "/",             label: lang === "mr" ? "मुख्यपृष्ठ"    : "Home" },
-    { href: "/about",        label: lang === "mr" ? "आमच्याबद्दल"   : "About" },
-    { href: "/events",       label: lang === "mr" ? "कार्यक्रम"     : "Events" },
-    { href: "/achievements", label: lang === "mr" ? "यश"           : "Achievements" },
-    { href: "/team",         label: lang === "mr" ? "आमची टीम"      : "Team" },
-    { href: "/lookup",       label: lang === "mr" ? "परिणाम पहा"    : "Check Result" },
+  const columns: { heading: string; links: { href: string; label: string }[] }[] = [
+    {
+      heading: t("शैक्षणिक", "Academics"),
+      links: [
+        { href: "/lookup",              label: t("परिणाम पहा", "Check Result") },
+        { href: "/academics/toppers",   label: t("गुणवंत विद्यार्थी", "Toppers") },
+        { href: "/academics/faculty",   label: t("शिक्षक वर्ग", "Faculty") },
+        { href: "/academics/downloads", label: t("डाउनलोड", "Downloads") },
+      ],
+    },
+    {
+      heading: t("शाळा", "School"),
+      links: [
+        { href: "/about",   label: t("आमच्याबद्दल", "About us") },
+        { href: "/life",    label: t("शालेय जीवन", "School life") },
+        { href: "/contact", label: t("संपर्क", "Contact") },
+      ],
+    },
   ];
 
   return (
-    <footer className="mt-16 border-t border-gray-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">{name}</h3>
-            <p className="mt-2 text-sm text-gray-600">
-              {lang === "mr"
-                ? "आपल्या मुलांच्या भविष्यासाठी उत्तम शिक्षण."
-                : "Nurturing tomorrow's leaders through excellence in education."}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">
-              {lang === "mr" ? "बाजू" : "Explore"}
-            </h3>
-            <ul className="mt-3 space-y-1.5 text-sm">
-              {nav.map((n) => (
-                <li key={n.href}>
-                  <Link
-                    href={n.href}
-                    className="text-gray-600 hover:text-indigo-600 hover:underline"
-                  >
-                    {n.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">
-              {lang === "mr" ? "संपर्क" : "Contact"}
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-600">
-              {school.address && (
-                <li className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 h-4 w-4 flex-none text-gray-400" />
-                  <span>{school.address}</span>
-                </li>
+    <footer className="mt-24 bg-linear-to-b from-ink-900 to-brand-950 text-ink-200">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+          {/* Brand + tagline */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-3">
+              {school.logo_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={school.logo_url}
+                  alt=""
+                  className="h-10 w-10 flex-none rounded-lg bg-white p-1 object-contain"
+                />
+              ) : (
+                <div className="flex h-10 w-10 flex-none items-center justify-center rounded-lg bg-white/10 text-base font-bold text-white ring-1 ring-white/20">
+                  {name.trim().charAt(0).toUpperCase()}
+                </div>
               )}
-              <li className="flex items-start gap-2">
-                <Phone className="mt-0.5 h-4 w-4 flex-none text-gray-400" />
-                <span className="tabular-nums">
-                  {lang === "mr" ? "फोन: उपलब्ध लवकरच" : "Phone: coming soon"}
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 flex-none text-gray-400" />
-                <Link href="/contact" className="hover:text-indigo-600 hover:underline">
-                  {lang === "mr" ? "आम्हाला ईमेल पाठवा" : "Send us a message"}
-                </Link>
-              </li>
-            </ul>
+              <div className="font-display text-xl font-semibold text-white">{name}</div>
+            </div>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-300">
+              {t(
+                "प्रत्येक विद्यार्थ्याच्या सर्वांगीण विकासासाठी वचनबद्ध — दर्जेदार शिक्षणासोबतच मूल्यशिक्षण, कला आणि क्रीडांचा समतोल.",
+                "Committed to the all-round development of every student — quality education balanced with values, arts and athletics.",
+              )}
+            </p>
+
+            {school.address && (
+              <div className="mt-6 flex items-start gap-3 text-sm text-ink-300">
+                <MapPin className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
+                <span>{school.address}</span>
+              </div>
+            )}
+            <div className="mt-2 flex items-start gap-3 text-sm text-ink-300">
+              <Phone className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
+              <span>{t("फोन तपशील लवकरच", "Phone details coming soon")}</span>
+            </div>
+            <div className="mt-2 flex items-start gap-3 text-sm text-ink-300">
+              <Mail className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
+              <Link href="/contact" className="hover:text-accent-300 hover:underline">
+                {t("आम्हाला संदेश पाठवा", "Send us a message")}
+              </Link>
+            </div>
           </div>
+
+          {/* Link columns */}
+          {columns.map((col) => (
+            <div key={col.heading}>
+              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-accent-400">
+                {col.heading}
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="text-ink-300 transition-colors hover:text-white"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-gray-100 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center">
-          <p>© {year} {name}. All rights reserved.</p>
-          <p>
-            {lang === "mr" ? "प्रशासकीय प्रवेश" : "Admin"}:{" "}
+        {/* Sub-footer */}
+        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-white/10 pt-6 text-xs text-ink-400 sm:flex-row sm:items-center">
+          <p>© {year} {name}. {t("सर्व हक्क राखीव.", "All rights reserved.")}</p>
+          <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="text-indigo-600 hover:underline"
+              className="inline-flex items-center gap-1 text-ink-300 hover:text-accent-300"
             >
-              {lang === "mr" ? "लॉगिन" : "Login"}
+              {t("प्रशासकीय प्रवेश", "Admin login")}
+              <ArrowUpRight className="h-3 w-3" />
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </footer>
