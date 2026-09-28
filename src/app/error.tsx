@@ -22,18 +22,18 @@ export default function Error({
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-lg">
+      <div className="w-full max-w-md rounded-2xl border border-ink-200 bg-white p-8 text-center shadow-lg">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
           <AlertOctagon className="h-7 w-7" />
         </div>
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="text-lg font-semibold text-ink-900">
           तांत्रिक अडचण आली
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-ink-500">
           Something went wrong. It has been reported — please try again.
         </p>
         {error.digest && (
-          <p className="mt-4 font-mono text-[11px] text-gray-400">
+          <p className="mt-4 font-mono text-[11px] text-ink-400">
             ref: {error.digest}
           </p>
         )}

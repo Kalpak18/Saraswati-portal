@@ -64,14 +64,14 @@ export default async function ResultsPage() {
             key: e.id,
             cells: (
               <>
-                <td className="px-4 py-3 font-medium text-gray-900">{label}</td>
-                <td className="px-4 py-3 text-gray-700">{e.test_type}</td>
-                <td className="px-4 py-3 text-gray-700 tabular-nums">{e.academic_year}</td>
-                <td className="px-4 py-3 text-gray-700 tabular-nums">{dateRange}</td>
+                <td className="px-4 py-3 font-medium text-ink-900">{label}</td>
+                <td className="px-4 py-3 text-ink-700">{e.test_type}</td>
+                <td className="px-4 py-3 text-ink-700 tabular-nums">{e.academic_year}</td>
+                <td className="px-4 py-3 text-ink-700 tabular-nums">{dateRange}</td>
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/results/${e.id}`}
-                    className="inline-flex items-center gap-1 rounded font-medium text-indigo-600 hover:text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    className="inline-flex items-center gap-1 rounded font-medium text-brand-700 hover:text-brand-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                   >
                     View <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
@@ -81,21 +81,21 @@ export default async function ResultsPage() {
             mobile: (
               <Link
                 href={`/admin/results/${e.id}`}
-                className="flex items-center justify-between gap-3 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="flex items-center justify-between gap-3 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
                     {label}
                   </div>
-                  <div className="mt-0.5 truncate text-base font-semibold text-gray-900">
+                  <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
                     {e.test_type}
                   </div>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-500">
-                    <Badge tone="indigo">{e.academic_year}</Badge>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-ink-500">
+                    <Badge tone="brand">{e.academic_year}</Badge>
                     <span className="tabular-nums">{dateRange}</span>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 flex-none text-gray-400" />
+                <ArrowRight className="h-4 w-4 flex-none text-ink-400" />
               </Link>
             ),
           };

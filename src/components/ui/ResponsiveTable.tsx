@@ -54,16 +54,16 @@ export function ResponsiveTable({
   return (
     <div className={cn("w-full", className)}>
       {/* Desktop */}
-      <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm sm:block">
+      <div className="hidden overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm sm:block">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+          <table className="min-w-full divide-y divide-ink-200 text-sm">
+            <thead className="bg-ink-50 text-left text-xs font-medium uppercase tracking-wide text-ink-500">
               <tr>{head}</tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-ink-100">
               {hasRows
                 ? rows.map((r) => (
-                    <tr key={r.key} className="hover:bg-gray-50">
+                    <tr key={r.key} className="hover:bg-ink-50">
                       {r.cells}
                     </tr>
                   ))
@@ -85,13 +85,13 @@ export function ResponsiveTable({
           ? rows.map((r) => (
               <div
                 key={r.key}
-                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-ink-200 bg-white p-4 shadow-sm"
               >
                 {r.mobile}
               </div>
             ))
           : (mobileEmpty ?? empty) && (
-              <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <div className="rounded-xl border border-ink-200 bg-white p-6">
                 {mobileEmpty ?? empty}
               </div>
             )}

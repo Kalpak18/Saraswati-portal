@@ -14,9 +14,9 @@ export default async function ParentCardPage(
   if (!data) notFound();
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 print:bg-white print:py-0">
+    <div className="min-h-screen bg-ink-100 py-6 print:bg-white print:py-0">
       <div className="mx-auto flex max-w-[720px] justify-between gap-2 px-2 pb-2 print:hidden">
-        <Link href="/lookup" className="text-sm text-indigo-600 hover:underline">← Back</Link>
+        <Link href="/lookup" className="text-sm text-brand-700 hover:underline">← Back</Link>
         <PrintButton />
       </div>
       <ReportCard data={data} />

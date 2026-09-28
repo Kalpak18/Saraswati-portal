@@ -232,8 +232,8 @@ export default function TemplatesClient() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Templates</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-xl font-semibold text-ink-900">Templates</h1>
+        <p className="mt-1 text-sm text-ink-500">
           Download → open in Excel / LibreOffice → fill the rows → upload back into the app.
           Every template has a <b>How to fill</b> sheet inside.
         </p>
@@ -241,15 +241,15 @@ export default function TemplatesClient() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {CARDS.map((c) => (
-          <div key={c.filename} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+          <div key={c.filename} className="rounded-lg border border-ink-200 bg-white p-5 shadow-sm">
             <div className="mb-3">
-              <div className="font-semibold text-gray-900">{c.title}</div>
-              <div className="text-xs text-gray-500">{c.desc}</div>
+              <div className="font-semibold text-ink-900">{c.title}</div>
+              <div className="text-xs text-ink-500">{c.desc}</div>
             </div>
             <Button variant="secondary" onClick={() => saveWorkbook(c.build(), c.filename)}>
               <Download className="mr-1 h-4 w-4" /> Download
             </Button>
-            <div className="mt-2 text-[10px] text-gray-400 break-all">{c.filename}</div>
+            <div className="mt-2 text-[10px] text-ink-400 break-all">{c.filename}</div>
           </div>
         ))}
       </div>

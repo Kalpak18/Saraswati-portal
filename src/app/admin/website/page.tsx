@@ -63,7 +63,7 @@ const TILES: {
 ];
 
 const tones: Record<string, { bg: string; text: string }> = {
-  indigo: { bg: "bg-indigo-50", text: "text-indigo-600" },
+  indigo: { bg: "bg-brand-50", text: "text-brand-700" },
   purple: { bg: "bg-purple-50", text: "text-purple-600" },
   green:  { bg: "bg-green-50",  text: "text-green-600" },
   amber:  { bg: "bg-amber-50",  text: "text-amber-600" },
@@ -76,20 +76,20 @@ export default function WebsiteIndexPage() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+          <div className="text-xs font-semibold uppercase tracking-wide text-brand-700">
             Content management
           </div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink-900">
             Website content
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-ink-600">
             Every section of the public school website is editable from here.
           </p>
         </div>
         <Link
           href="/"
           target="_blank"
-          className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+          className="inline-flex items-center gap-1 rounded-md border border-ink-300 bg-white px-3 py-2 text-sm text-ink-700 shadow-sm hover:bg-ink-50"
         >
           <Home className="h-4 w-4" />
           View live site
@@ -108,15 +108,15 @@ export default function WebsiteIndexPage() {
                   <Icon className="h-5 w-5" />
                 </div>
                 {!t.ready && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                  <span className="rounded-full bg-ink-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-500">
                     Coming next
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-base font-semibold text-gray-900">{t.title}</h3>
-              <p className="mt-1 text-xs text-gray-500">{t.description}</p>
+              <h3 className="mt-4 text-base font-semibold text-ink-900">{t.title}</h3>
+              <p className="mt-1 text-xs text-ink-500">{t.description}</p>
               {t.ready && (
-                <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600">
+                <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-700">
                   Open editor <ArrowRight className="h-3 w-3" />
                 </div>
               )}
@@ -126,14 +126,14 @@ export default function WebsiteIndexPage() {
             <Link
               key={t.href}
               href={t.href}
-              className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
+              className="flex flex-col justify-between rounded-xl border border-ink-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md"
             >
               {inner}
             </Link>
           ) : (
             <div
               key={t.href}
-              className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm opacity-70"
+              className="flex flex-col justify-between rounded-xl border border-ink-200 bg-white p-5 shadow-sm opacity-70"
             >
               {inner}
             </div>

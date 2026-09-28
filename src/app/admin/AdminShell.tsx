@@ -57,24 +57,27 @@ export default function AdminShell({
     exact ? pathname === href : pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-ink-50">
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-gray-200 bg-white transition-transform lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-ink-200 bg-white transition-transform lg:static lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center gap-3 border-b border-gray-100 px-4">
+        <div className="flex h-16 items-center gap-3 border-b border-ink-100 px-5">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl} alt="" className="h-9 w-9 flex-none rounded-md object-contain ring-1 ring-gray-100" />
+            <img src={logoUrl} alt="" className="h-9 w-9 flex-none rounded-lg object-contain ring-1 ring-ink-100" />
           ) : (
-            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-indigo-600 text-sm font-bold text-white">
+            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-linear-to-br from-brand-700 to-brand-900 font-display text-sm font-bold text-white shadow-sm">
               {(schoolName || "S").trim().charAt(0).toUpperCase()}
             </div>
           )}
-          <div className="min-w-0 truncate text-sm font-semibold text-gray-900">{schoolName}</div>
+          <div className="min-w-0">
+            <div className="truncate font-display text-sm font-semibold text-ink-900">{schoolName}</div>
+            <div className="truncate text-[10px] font-medium uppercase tracking-widest text-ink-400">Admin console</div>
+          </div>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
           {nav.map((item) => {
@@ -87,21 +90,21 @@ export default function AdminShell({
                 className={cn(
                   "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   active
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                    ? "bg-brand-50 text-brand-800"
+                    : "text-ink-700 hover:bg-ink-100 hover:text-ink-900",
                 )}
                 aria-current={active ? "page" : undefined}
               >
                 {active && (
-                  <span className="absolute inset-y-1 left-0 w-1 rounded-r bg-indigo-600" aria-hidden="true" />
+                  <span className="absolute inset-y-1 left-0 w-1 rounded-r bg-brand-700" aria-hidden="true" />
                 )}
-                <Icon className={cn("h-4 w-4 flex-none", active ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600")} />
+                <Icon className={cn("h-4 w-4 flex-none", active ? "text-brand-700" : "text-ink-400 group-hover:text-ink-600")} />
                 <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="border-t border-gray-100 p-3 text-[11px] text-gray-400">
+        <div className="border-t border-ink-100 p-3 text-[11px] text-ink-400">
           Saraswati Portal
         </div>
       </aside>
@@ -109,7 +112,7 @@ export default function AdminShell({
       {/* Mobile backdrop */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-gray-900/50 backdrop-blur-[1px] animate-in fade-in duration-150 lg:hidden"
+          className="fixed inset-0 z-30 bg-ink-900/50 backdrop-blur-[1px] animate-in fade-in duration-150 lg:hidden"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
@@ -117,9 +120,9 @@ export default function AdminShell({
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-gray-200 bg-white/95 px-4 backdrop-blur">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-ink-200 bg-white/95 px-4 backdrop-blur">
           <button
-            className="rounded-md p-2 text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 lg:hidden"
+            className="rounded-md p-2 text-ink-700 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 lg:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
@@ -127,19 +130,19 @@ export default function AdminShell({
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          <div className="hidden truncate text-sm text-gray-500 lg:block">
+          <div className="hidden truncate text-sm text-ink-500 lg:block">
             {schoolName}
           </div>
 
           <div className="flex items-center gap-2">
             {/* Lang toggle */}
-            <div className="flex overflow-hidden rounded-md border border-gray-300 text-xs">
+            <div className="flex overflow-hidden rounded-md border border-ink-300 text-xs">
               <button
                 onClick={() => setLang("mr")}
                 aria-pressed={lang === "mr"}
                 className={cn(
                   "px-2.5 py-1 font-medium transition-colors",
-                  lang === "mr" ? "bg-indigo-600 text-white" : "bg-white text-gray-700 hover:bg-gray-50",
+                  lang === "mr" ? "bg-brand-700 text-white" : "bg-white text-ink-700 hover:bg-ink-50",
                 )}
               >
                 मराठी
@@ -148,8 +151,8 @@ export default function AdminShell({
                 onClick={() => setLang("en")}
                 aria-pressed={lang === "en"}
                 className={cn(
-                  "border-l border-gray-300 px-2.5 py-1 font-medium transition-colors",
-                  lang === "en" ? "bg-indigo-600 text-white" : "bg-white text-gray-700 hover:bg-gray-50",
+                  "border-l border-ink-300 px-2.5 py-1 font-medium transition-colors",
+                  lang === "en" ? "bg-brand-700 text-white" : "bg-white text-ink-700 hover:bg-ink-50",
                 )}
               >
                 English
@@ -160,30 +163,30 @@ export default function AdminShell({
             <div className="relative">
               <button
                 onClick={(e) => { e.stopPropagation(); setUserMenuOpen((v) => !v); }}
-                className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                className="flex items-center gap-2 rounded-md border border-ink-200 bg-white px-2 py-1.5 text-sm text-ink-700 shadow-sm hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                 aria-haspopup="menu"
                 aria-expanded={userMenuOpen}
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">
                   {(userEmail || "?").trim().charAt(0).toUpperCase()}
                 </span>
                 <span className="hidden max-w-[180px] truncate text-xs sm:inline">{userEmail}</span>
-                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                <ChevronDown className="h-3.5 w-3.5 text-ink-400" />
               </button>
               {userMenuOpen && (
                 <div
                   role="menu"
-                  className="animate-in slide-down-fade absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+                  className="animate-in slide-down-fade absolute right-0 mt-2 w-48 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg"
                 >
-                  <div className="border-b border-gray-100 px-3 py-2 text-[11px] text-gray-500">Signed in as</div>
-                  <div className="border-b border-gray-100 px-3 pb-2 pt-1 text-xs font-medium text-gray-800 break-all">{userEmail}</div>
+                  <div className="border-b border-ink-100 px-3 py-2 text-[11px] text-ink-500">Signed in as</div>
+                  <div className="border-b border-ink-100 px-3 pb-2 pt-1 text-xs font-medium text-ink-800 break-all">{userEmail}</div>
                   <button
                     onClick={logout}
                     disabled={signingOut}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50 disabled:opacity-60"
                     role="menuitem"
                   >
-                    <LogOut className="h-4 w-4 text-gray-500" />
+                    <LogOut className="h-4 w-4 text-ink-500" />
                     {signingOut ? "Signing out…" : t(dict.common.logout, lang)}
                   </button>
                 </div>

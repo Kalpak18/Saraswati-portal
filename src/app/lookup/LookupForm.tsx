@@ -170,13 +170,13 @@ export default function LookupForm({ school }: { school: School }) {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={school.logo_url} alt="" className="h-16 w-16 rounded object-contain" />
             )}
-            <h1 className="text-xl font-semibold text-gray-900">{school.name || "Saraswati Portal"}</h1>
-            <p className="text-sm text-gray-500">परिणाम पहा · View Result</p>
+            <h1 className="text-xl font-semibold text-ink-900">{school.name || "Saraswati Portal"}</h1>
+            <p className="text-sm text-ink-500">परिणाम पहा · View Result</p>
           </div>
 
           <form onSubmit={onSearch} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">पालकाचा मोबाईल · Parent mobile</span>
+              <span className="font-medium text-ink-700">पालकाचा मोबाईल · Parent mobile</span>
               <div className="flex items-stretch gap-2">
                 <CountryCodeSelect value={country} onChange={setCountry} disabled={pending} />
                 <Input
@@ -194,7 +194,7 @@ export default function LookupForm({ school }: { school: School }) {
             </div>
 
             <div className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium text-gray-700">विद्यार्थ्याची जन्मतारीख · Student&apos;s date of birth</span>
+              <span className="font-medium text-ink-700">विद्यार्थ्याची जन्मतारीख · Student&apos;s date of birth</span>
               <DobPicker value={dob} onChange={setDob} disabled={pending} />
             </div>
 
@@ -213,8 +213,8 @@ export default function LookupForm({ school }: { school: School }) {
       <div className="flex min-h-screen items-center justify-center px-4 py-10">
         <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-md">
           <div className="mb-5">
-            <h1 className="text-lg font-semibold text-gray-900">पाल्य निवडा · Select child</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-lg font-semibold text-ink-900">पाल्य निवडा · Select child</h1>
+            <p className="mt-1 text-sm text-ink-500">
               या मोबाईल नंबरवर {students.length} विद्यार्थी आढळले
             </p>
           </div>
@@ -223,17 +223,17 @@ export default function LookupForm({ school }: { school: School }) {
               <li key={s.id}>
                 <button
                   onClick={() => pick(s)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/50"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-ink-200 px-4 py-3 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/50"
                 >
-                  <span className="font-medium text-gray-900">{s.student_name}</span>
-                  <span className="shrink-0 text-xs text-gray-500">
+                  <span className="font-medium text-ink-900">{s.student_name}</span>
+                  <span className="shrink-0 text-xs text-ink-500">
                     {s.class_name} · हजेरी क्र. {s.roll_no}
                   </span>
                 </button>
               </li>
             ))}
           </ul>
-          <button onClick={reset} className="mt-5 text-sm text-indigo-600 hover:underline">
+          <button onClick={reset} className="mt-5 text-sm text-brand-700 hover:underline">
             ← नवीन शोध · New search
           </button>
         </div>
@@ -251,17 +251,17 @@ export default function LookupForm({ school }: { school: School }) {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={school.logo_url} alt="" className="h-8 w-8 shrink-0 rounded object-contain" />
             )}
-            <span className="truncate text-sm font-medium text-gray-700">
+            <span className="truncate text-sm font-medium text-ink-700">
               {school.name || "Saraswati Portal"}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             {students.length > 1 && (
-              <button onClick={() => setStep("children")} className="text-sm text-indigo-600 hover:underline">
+              <button onClick={() => setStep("children")} className="text-sm text-brand-700 hover:underline">
                 पाल्य बदला
               </button>
             )}
-            <button onClick={reset} className="text-sm text-indigo-600 hover:underline">
+            <button onClick={reset} className="text-sm text-brand-700 hover:underline">
               नवीन शोध
             </button>
           </div>
@@ -269,48 +269,48 @@ export default function LookupForm({ school }: { school: School }) {
 
         {/* Student details */}
         <div className="rounded-xl bg-white p-6 shadow-md">
-          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink-900">
             {picked?.student_name}
           </h1>
           <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
             <div>
-              <dt className="text-xs text-gray-500">वर्ग · Standard</dt>
-              <dd className="mt-0.5 text-sm font-medium text-gray-900">{picked?.standard_name || "—"}</dd>
+              <dt className="text-xs text-ink-500">वर्ग · Standard</dt>
+              <dd className="mt-0.5 text-sm font-medium text-ink-900">{picked?.standard_name || "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">तुकडी · Division</dt>
-              <dd className="mt-0.5 text-sm font-medium text-gray-900">{picked?.division_name || "—"}</dd>
+              <dt className="text-xs text-ink-500">तुकडी · Division</dt>
+              <dd className="mt-0.5 text-sm font-medium text-ink-900">{picked?.division_name || "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">हजेरी क्र. · Roll no.</dt>
-              <dd className="mt-0.5 text-sm font-medium text-gray-900">{picked?.roll_no}</dd>
+              <dt className="text-xs text-ink-500">हजेरी क्र. · Roll no.</dt>
+              <dd className="mt-0.5 text-sm font-medium text-ink-900">{picked?.roll_no}</dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">शैक्षणिक वर्ष · Year</dt>
-              <dd className="mt-0.5 text-sm font-medium text-gray-900">{picked?.academic_year || "—"}</dd>
+              <dt className="text-xs text-ink-500">शैक्षणिक वर्ष · Year</dt>
+              <dd className="mt-0.5 text-sm font-medium text-ink-900">{picked?.academic_year || "—"}</dd>
             </div>
             {picked?.gr_no && (
               <div>
-                <dt className="text-xs text-gray-500">जी.आर. क्र. · GR no.</dt>
-                <dd className="mt-0.5 text-sm font-medium text-gray-900">{picked.gr_no}</dd>
+                <dt className="text-xs text-ink-500">जी.आर. क्र. · GR no.</dt>
+                <dd className="mt-0.5 text-sm font-medium text-ink-900">{picked.gr_no}</dd>
               </div>
             )}
           </dl>
         </div>
 
         {/* Results */}
-        <h2 className="mb-3 mt-6 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h2 className="mb-3 mt-6 text-sm font-semibold uppercase tracking-wide text-ink-500">
           निकाल · Results {exams && exams.length > 0 && <span className="font-normal">({exams.length})</span>}
         </h2>
 
         {!exams ? (
-          <div className="rounded-xl bg-white p-6 text-sm text-gray-500 shadow-sm">
+          <div className="rounded-xl bg-white p-6 text-sm text-ink-500 shadow-sm">
             निकाल लोड होत आहेत…
           </div>
         ) : exams.length === 0 ? (
           <div className="rounded-xl bg-white p-6 text-center shadow-sm">
-            <p className="text-sm font-medium text-gray-900">अद्याप निकाल उपलब्ध नाही</p>
-            <p className="mt-1 text-sm text-gray-500">No results have been uploaded for this student yet.</p>
+            <p className="text-sm font-medium text-ink-900">अद्याप निकाल उपलब्ध नाही</p>
+            <p className="mt-1 text-sm text-ink-500">No results have been uploaded for this student yet.</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -318,11 +318,11 @@ export default function LookupForm({ school }: { school: School }) {
               <li key={e.id}>
                 <Link
                   href={`/lookup/${e.id}/${picked!.id}`}
-                  className="flex items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-transparent transition-all hover:shadow-md hover:ring-indigo-200"
+                  className="flex items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-transparent transition-all hover:shadow-md hover:ring-brand-200"
                 >
                   <div className="min-w-0">
-                    <div className="truncate font-medium text-gray-900">{e.test_type}</div>
-                    <div className="mt-0.5 text-xs text-gray-500">
+                    <div className="truncate font-medium text-ink-900">{e.test_type}</div>
+                    <div className="mt-0.5 text-xs text-ink-500">
                       {examDates(e)}
                       {examDates(e) && " · "}
                       {e.academic_year}
@@ -337,14 +337,14 @@ export default function LookupForm({ school }: { school: School }) {
                         >
                           {e.percent}%
                         </div>
-                        <div className="mt-0.5 text-xs text-gray-500">
+                        <div className="mt-0.5 text-xs text-ink-500">
                           {e.obtained} / {e.total}
                         </div>
                       </div>
                     ) : (
-                      <span className="text-xs text-gray-400">श्रेणी</span>
+                      <span className="text-xs text-ink-400">श्रेणी</span>
                     )}
-                    <span aria-hidden className="text-gray-300">›</span>
+                    <span aria-hidden className="text-ink-300">›</span>
                   </div>
                 </Link>
               </li>

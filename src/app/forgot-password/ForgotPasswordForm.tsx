@@ -32,12 +32,12 @@ export default function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="text-center">
-        <h2 className="text-base font-semibold text-gray-900">ईमेल पाठवला · Email sent</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          If an account exists for <b className="text-gray-700">{email}</b>, a password reset link
+        <h2 className="text-base font-semibold text-ink-900">ईमेल पाठवला · Email sent</h2>
+        <p className="mt-2 text-sm text-ink-500">
+          If an account exists for <b className="text-ink-700">{email}</b>, a password reset link
           is on its way. The link expires in one hour.
         </p>
-        <Link href="/login" className="mt-6 inline-block text-sm text-indigo-600 hover:underline">
+        <Link href="/login" className="mt-6 inline-block text-sm text-brand-700 hover:underline">
           ← लॉगिनवर परत · Back to login
         </Link>
       </div>
@@ -47,8 +47,8 @@ export default function ForgotPasswordForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">पासवर्ड विसरलात? · Forgot password</h2>
-        <p className="mt-1 text-sm text-gray-500">
+        <h2 className="text-base font-semibold text-ink-900">पासवर्ड विसरलात? · Forgot password</h2>
+        <p className="mt-1 text-sm text-ink-500">
           Enter the admin email and we&apos;ll send a reset link.
         </p>
       </div>
@@ -60,7 +60,7 @@ export default function ForgotPasswordForm() {
       )}
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-gray-700">ईमेल · Email</span>
+        <span className="font-medium text-ink-700">ईमेल · Email</span>
         <Input
           type="email"
           required
@@ -74,7 +74,7 @@ export default function ForgotPasswordForm() {
         {busy ? "पाठवत आहे…" : "रीसेट लिंक पाठवा · Send reset link"}
       </Button>
 
-      <Link href="/login" className="text-center text-sm text-indigo-600 hover:underline">
+      <Link href="/login" className="text-center text-sm text-brand-700 hover:underline">
         ← लॉगिनवर परत · Back to login
       </Link>
     </form>

@@ -4,7 +4,7 @@ export default function SettingsLoading() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Skeleton className="h-6 w-40" />
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-4">
           <Skeleton className="h-20 w-20 rounded-md" />
           <div className="flex flex-col gap-2">

@@ -62,21 +62,21 @@ export function InstallPrompt() {
     <div
       role="region"
       aria-label="Install app"
-      className="fixed inset-x-3 bottom-3 z-40 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-lg sm:inset-x-auto sm:right-4 sm:max-w-md"
+      className="fixed inset-x-3 bottom-3 z-40 flex items-center gap-3 rounded-xl border border-ink-200 bg-white p-3 shadow-lg sm:inset-x-auto sm:right-4 sm:max-w-md"
     >
-      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
+      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-brand-50 text-brand-700">
         <Download className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1 text-sm">
-        <div className="font-medium text-gray-900">Install Saraswati</div>
-        <div className="truncate text-xs text-gray-500">
+        <div className="font-medium text-ink-900">Install Saraswati</div>
+        <div className="truncate text-xs text-ink-500">
           Add to home screen for fast access.
         </div>
       </div>
       <button
         type="button"
         onClick={accept}
-        className="rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
+        className="rounded-md bg-brand-700 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-800"
       >
         Install
       </button>
@@ -84,7 +84,7 @@ export function InstallPrompt() {
         type="button"
         onClick={dismiss}
         aria-label="Dismiss install prompt"
-        className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+        className="rounded-md p-2 text-ink-400 hover:bg-ink-100 hover:text-ink-700"
       >
         <X className="h-4 w-4" />
       </button>

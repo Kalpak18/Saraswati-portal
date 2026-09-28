@@ -33,23 +33,23 @@ export function EmptyState({
       {icon && (
         <div
           className={cn(
-            "mb-4 flex items-center justify-center rounded-full bg-indigo-50 text-indigo-500",
-            compact ? "h-10 w-10" : "h-14 w-14",
+            "mb-5 flex items-center justify-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100",
+            compact ? "h-12 w-12" : "h-16 w-16",
           )}
           aria-hidden="true"
         >
           {icon}
         </div>
       )}
-      <h3 className={cn("font-semibold text-gray-900", compact ? "text-sm" : "text-base")}>
+      <h3 className={cn("font-display font-semibold text-ink-900", compact ? "text-base" : "text-xl")}>
         {title}
       </h3>
       {description && (
-        <p className={cn("mt-1 max-w-md text-gray-500", compact ? "text-xs" : "text-sm")}>
+        <p className={cn("mt-2 max-w-md text-ink-500", compact ? "text-xs" : "text-sm")}>
           {description}
         </p>
       )}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

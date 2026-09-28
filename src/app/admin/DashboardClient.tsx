@@ -46,7 +46,7 @@ export default function DashboardClient({
   ];
 
   const toneClasses: Record<"indigo" | "green" | "purple", { bg: string; text: string; ring: string }> = {
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-600", ring: "hover:ring-indigo-200" },
+    indigo: { bg: "bg-brand-50", text: "text-brand-700", ring: "hover:ring-brand-200" },
     green:  { bg: "bg-green-50",  text: "text-green-600",  ring: "hover:ring-green-200" },
     purple: { bg: "bg-purple-50", text: "text-purple-600", ring: "hover:ring-purple-200" },
   };
@@ -71,19 +71,19 @@ export default function DashboardClient({
             <Link
               key={c.label}
               href={c.href}
-              className={`group flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm ring-2 ring-transparent transition-all hover:-translate-y-0.5 hover:shadow-md ${tc.ring}`}
+              className={`group flex flex-col justify-between rounded-xl border border-ink-200 bg-white p-5 shadow-sm ring-2 ring-transparent transition-all hover:-translate-y-0.5 hover:shadow-md ${tc.ring}`}
             >
               <div className="flex items-start justify-between">
                 <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${tc.bg} ${tc.text}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <ArrowRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500" />
+                <ArrowRight className="h-4 w-4 text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-ink-500" />
               </div>
               <div className="mt-4">
-                <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{c.label}</div>
+                <div className="text-xs font-medium uppercase tracking-wide text-ink-500">{c.label}</div>
                 <div className="mt-1 flex items-baseline gap-2">
-                  <div className="text-3xl font-semibold tracking-tight text-gray-900">{c.value}</div>
-                  <div className="text-xs text-gray-400">{c.ctaLabel} →</div>
+                  <div className="font-display text-3xl font-semibold tracking-tight text-ink-900 tabular-nums">{c.value}</div>
+                  <div className="text-xs text-ink-400">{c.ctaLabel} →</div>
                 </div>
               </div>
             </Link>
@@ -94,7 +94,7 @@ export default function DashboardClient({
       {/* Primary CTA — the action they came here to do */}
       <Link
         href="/admin/results/upload"
-        className="group relative flex items-center gap-3 overflow-hidden rounded-xl bg-linear-to-br from-indigo-600 to-indigo-700 p-4 text-white shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg sm:gap-4 sm:p-6"
+        className="group relative flex items-center gap-3 overflow-hidden rounded-xl bg-linear-to-br from-brand-700 to-brand-800 p-4 text-white shadow-md transition-transform hover:-translate-y-0.5 hover:shadow-lg sm:gap-4 sm:p-6"
       >
         <div className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/20 backdrop-blur sm:h-12 sm:w-12">
           <Upload className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -103,7 +103,7 @@ export default function DashboardClient({
           <div className="text-sm font-semibold sm:text-lg">
             {t(dict.dashboard.uploadCta, lang)}
           </div>
-          <div className="mt-0.5 line-clamp-2 text-[11px] text-indigo-100 sm:text-sm">
+          <div className="mt-0.5 line-clamp-2 text-[11px] text-brand-100 sm:text-sm">
             {lang === "mr"
               ? "Excel फाईल अपलोड करा — विद्यार्थी आपोआप जोडले जातील"
               : "Upload an Excel file — students are matched automatically"}
@@ -119,16 +119,16 @@ export default function DashboardClient({
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Link
           href="/admin/templates"
-          className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/40"
+          className="group flex items-start gap-3 rounded-xl border border-ink-200 bg-white p-4 shadow-sm transition-colors hover:border-brand-200 hover:bg-brand-50/40"
         >
-          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-gray-100 text-gray-600 group-hover:bg-white group-hover:text-indigo-600">
+          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-ink-100 text-ink-600 group-hover:bg-white group-hover:text-brand-700">
             <Download className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-ink-900">
               {lang === "mr" ? "टेम्पलेट्स डाउनलोड करा" : "Download templates"}
             </div>
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="mt-0.5 text-xs text-ink-500">
               {lang === "mr" ? "विद्यार्थी + निकाल Excel टेम्पलेट्स" : "Student + result Excel templates"}
             </div>
           </div>
@@ -136,16 +136,16 @@ export default function DashboardClient({
 
         <Link
           href="/admin/settings"
-          className="group flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/40"
+          className="group flex items-start gap-3 rounded-xl border border-ink-200 bg-white p-4 shadow-sm transition-colors hover:border-brand-200 hover:bg-brand-50/40"
         >
-          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-gray-100 text-gray-600 group-hover:bg-white group-hover:text-indigo-600">
+          <div className="flex h-9 w-9 flex-none items-center justify-center rounded-md bg-ink-100 text-ink-600 group-hover:bg-white group-hover:text-brand-700">
             <GraduationCap className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-sm font-medium text-ink-900">
               {lang === "mr" ? "शाळेची माहिती" : "School settings"}
             </div>
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="mt-0.5 text-xs text-ink-500">
               {lang === "mr" ? "नाव, पत्ता, लोगो" : "Name, address, logo"}
             </div>
           </div>

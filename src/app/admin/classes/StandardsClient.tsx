@@ -111,7 +111,7 @@ export default function StandardsClient({
       />
 
       {standards.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500 sm:p-10">
+        <div className="rounded-xl border border-dashed border-ink-300 bg-white p-8 text-center text-sm text-ink-500 sm:p-10">
           No standards yet. Click <b>Add standard</b> — e.g. <em>10 वी</em>, then add divisions <em>अ, ब, क</em> under it.
         </div>
       )}
@@ -122,8 +122,8 @@ export default function StandardsClient({
         const divs = divsByStd.get(s.id) ?? [];
         const isOpen = expanded[s.id] ?? true;
         return (
-          <div key={s.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2 sm:px-4 sm:py-3">
+          <div key={s.id} className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-ink-100 bg-ink-50 px-3 py-2 sm:px-4 sm:py-3">
               <IconButton
                 label={isOpen ? `Collapse ${s.name}` : `Expand ${s.name}`}
                 aria-expanded={isOpen}
@@ -133,8 +133,8 @@ export default function StandardsClient({
                 {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </IconButton>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-gray-900 sm:text-base">{s.name}</div>
-                <div className="truncate text-xs text-gray-500">
+                <div className="truncate text-sm font-semibold text-ink-900 sm:text-base">{s.name}</div>
+                <div className="truncate text-xs text-ink-500">
                   {s.academic_year} · {divs.length} division{divs.length === 1 ? "" : "s"}
                 </div>
               </div>
@@ -152,9 +152,9 @@ export default function StandardsClient({
             </div>
 
             {isOpen && (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-ink-100">
                 {divs.length === 0 && (
-                  <div className="px-4 py-4 text-sm text-gray-500">
+                  <div className="px-4 py-4 text-sm text-ink-500">
                     No divisions in this standard yet.
                   </div>
                 )}
@@ -163,12 +163,12 @@ export default function StandardsClient({
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/admin/students?division=${d.id}`}
-                        className="inline-flex items-center gap-1 rounded font-medium text-gray-900 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-1 rounded font-medium text-ink-900 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                       >
                         Division {d.name}
                         <ArrowRight className="h-3 w-3" />
                       </Link>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-ink-500">
                         {studentCountByDivision[d.id] ?? 0} students
                       </div>
                     </div>
@@ -214,18 +214,18 @@ export default function StandardsClient({
         {stdModal && (
           <form onSubmit={onSaveStd} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Standard name</span>
+              <span className="font-medium text-ink-700">Standard name</span>
               <Input required placeholder="10th or 10 वी" value={stdModal.name}
                 onChange={(e) => setStdModal({ ...stdModal, name: e.target.value })} />
               {(() => {
                 const c = normalizeStandard(stdModal.name);
                 return c && c !== stdModal.name.trim() ? (
-                  <span className="text-xs text-gray-500">Will be saved as <b>{displayStandard(c, "mr")}</b></span>
+                  <span className="text-xs text-ink-500">Will be saved as <b>{displayStandard(c, "mr")}</b></span>
                 ) : null;
               })()}
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Academic year</span>
+              <span className="font-medium text-ink-700">Academic year</span>
               <Input required placeholder="2026-27" value={stdModal.academic_year}
                 onChange={(e) => setStdModal({ ...stdModal, academic_year: e.target.value })} />
             </label>
@@ -243,13 +243,13 @@ export default function StandardsClient({
         {divModal && (
           <form onSubmit={onSaveDiv} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Division name</span>
+              <span className="font-medium text-ink-700">Division name</span>
               <Input required placeholder="A / अ / 1" value={divModal.name}
                 onChange={(e) => setDivModal({ ...divModal, name: e.target.value })} />
               {(() => {
                 const c = normalizeDivision(divModal.name);
                 return c && c !== divModal.name.trim() ? (
-                  <span className="text-xs text-gray-500">Will be saved as <b>{displayDivision(c, "mr")}</b></span>
+                  <span className="text-xs text-ink-500">Will be saved as <b>{displayDivision(c, "mr")}</b></span>
                 ) : null;
               })()}
             </label>

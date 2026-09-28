@@ -9,7 +9,7 @@ export default function TemplatesLoading() {
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div key={i} className="rounded-xl border border-ink-200 bg-white p-5 shadow-sm">
             <div className="mb-3 space-y-2">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-64" />

@@ -2,13 +2,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gray-100 py-6 print:bg-white print:py-0">
+    <div className="min-h-screen bg-ink-100 py-6 print:bg-white print:py-0">
       <div className="mx-auto flex max-w-180 justify-between gap-2 px-2 pb-2 print:hidden">
         <Skeleton className="h-6 w-16" />
         <Skeleton className="h-10 w-40" />
       </div>
       <div className="mx-auto max-w-180 rounded-xl bg-white p-8 shadow-sm">
-        <div className="mb-6 flex items-center gap-4 border-b border-gray-200 pb-4">
+        <div className="mb-6 flex items-center gap-4 border-b border-ink-200 pb-4">
           <Skeleton className="h-16 w-16 rounded-full" />
           <div className="flex-1 space-y-2 text-center">
             <Skeleton className="mx-auto h-5 w-64" />

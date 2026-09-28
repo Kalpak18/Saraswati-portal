@@ -13,7 +13,7 @@ export default async function StudentCardPage(
   if (!data) notFound();
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 print:bg-white print:py-0">
+    <div className="min-h-screen bg-ink-100 py-6 print:bg-white print:py-0">
       <div className="mx-auto flex max-w-[720px] justify-end gap-2 px-2 pb-2 print:hidden">
         <PrintButton />
       </div>

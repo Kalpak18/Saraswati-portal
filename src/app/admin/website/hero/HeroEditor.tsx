@@ -59,7 +59,7 @@ export default function HeroEditor({ initial }: { initial: HeroForm }) {
           <Link
             href="/"
             target="_blank"
-            className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+            className="inline-flex items-center gap-1 rounded-md border border-ink-300 bg-white px-3 py-2 text-sm text-ink-700 shadow-sm hover:bg-ink-50"
           >
             <ExternalLink className="h-4 w-4" />
             View live
@@ -70,9 +70,9 @@ export default function HeroEditor({ initial }: { initial: HeroForm }) {
       <form onSubmit={onSubmit} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left: text fields */}
         <div className="space-y-6 lg:col-span-2">
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-900">Text content</h2>
-            <p className="mt-1 text-xs text-gray-500">Leave a field blank to use a bilingual default.</p>
+          <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink-900">Text content</h2>
+            <p className="mt-1 text-xs text-ink-500">Leave a field blank to use a bilingual default.</p>
             <div className="mt-5 space-y-5">
               <Input
                 label="Title"
@@ -82,15 +82,15 @@ export default function HeroEditor({ initial }: { initial: HeroForm }) {
                 hint="Big headline on the home hero."
               />
               <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium text-gray-700">Tagline</span>
+                <span className="font-medium text-ink-700">Tagline</span>
                 <textarea
                   value={form.tagline}
                   onChange={(e) => setForm({ ...form, tagline: e.target.value })}
                   rows={3}
                   placeholder="e.g. Committed to the all-round development of every child."
-                  className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm outline-none placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  className="block w-full rounded-md border border-ink-300 bg-white px-3 py-2 text-sm shadow-sm outline-none placeholder:text-ink-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                 />
-                <span className="text-xs text-gray-500">One or two sentences under the title.</span>
+                <span className="text-xs text-ink-500">One or two sentences under the title.</span>
               </label>
               <Input
                 label="Small caption"
@@ -102,9 +102,9 @@ export default function HeroEditor({ initial }: { initial: HeroForm }) {
             </div>
           </section>
 
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-900">Call-to-action buttons</h2>
-            <p className="mt-1 text-xs text-gray-500">
+          <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink-900">Call-to-action buttons</h2>
+            <p className="mt-1 text-xs text-ink-500">
               The primary button is always visible. Secondary is shown next to it when both label &amp; link are provided.
             </p>
             <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -140,9 +140,9 @@ export default function HeroEditor({ initial }: { initial: HeroForm }) {
 
         {/* Right: photo + save */}
         <div className="space-y-6">
-          <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-900">Cover photo</h2>
-            <p className="mt-1 text-xs text-gray-500">
+          <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-ink-900">Cover photo</h2>
+            <p className="mt-1 text-xs text-ink-500">
               Used as the hero background. If not set, a soft indigo gradient is shown instead.
             </p>
             <div className="mt-5">

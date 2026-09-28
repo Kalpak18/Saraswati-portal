@@ -34,13 +34,13 @@ export default async function EditMarksPage(props: PageProps<"/admin/results/[ex
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-ink-500">
           <Link href="/admin/results" className="hover:underline">Results</Link>
           {" / "}
           <Link href={`/admin/results/${examId}`} className="hover:underline">{label} — {exam.test_type}</Link>
         </div>
-        <h1 className="text-xl font-semibold text-gray-900">
-          Edit marks — {student.student_name} <span className="text-sm text-gray-500">(Roll #{student.roll_no})</span>
+        <h1 className="text-xl font-semibold text-ink-900">
+          Edit marks — {student.student_name} <span className="text-sm text-ink-500">(Roll #{student.roll_no})</span>
         </h1>
       </div>
       <EditMarksForm examId={examId} studentId={studentId} rows={rows} />

@@ -221,11 +221,11 @@ export default function UploadWizard({
     return (
       <div className="mx-auto max-w-2xl space-y-6">
         <StepHeader step={1} title="Upload result file" />
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
           <label className="mb-4 flex flex-col gap-1 text-sm">
-            <span className="font-medium text-gray-700">Standard</span>
+            <span className="font-medium text-ink-700">Standard</span>
             <select
-              className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+              className="h-10 rounded-md border border-ink-300 bg-white px-3 text-sm"
               value={standardId}
               onChange={(e) => setStandardId(e.target.value)}
             >
@@ -235,15 +235,15 @@ export default function UploadWizard({
               ))}
             </select>
           </label>
-          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-10 text-center hover:border-indigo-400 hover:bg-indigo-50">
+          <label className="block cursor-pointer rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 p-10 text-center hover:border-brand-400 hover:bg-brand-50">
             <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
               disabled={busy || !standardId}
               onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} />
-            <FileSpreadsheet className="mx-auto mb-3 h-10 w-10 text-gray-400" />
-            <div className="text-sm font-medium text-gray-700">
+            <FileSpreadsheet className="mx-auto mb-3 h-10 w-10 text-ink-400" />
+            <div className="text-sm font-medium text-ink-700">
               {busy ? "Reading file…" : "Click to choose file"}
             </div>
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-ink-500">
               .xlsx / .xls / .csv — one student, N stacked, or one sheet per student.
             </div>
           </label>
@@ -259,7 +259,7 @@ export default function UploadWizard({
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-700">
           <Check className="h-7 w-7" />
         </div>
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-ink-900">
           {step.count} students&apos; results saved
           {step.examsCreated > 1 && <> across {step.examsCreated} exam{step.examsCreated === 1 ? "" : "s"}</>}
           {step.created > 0 && <> · {step.created} new students created</>}
@@ -492,22 +492,22 @@ export default function UploadWizard({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 rounded-lg border border-ink-200 bg-white p-4 shadow-sm sm:grid-cols-4">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-500">Test type (fallback)</span>
+          <span className="font-medium text-ink-500">Test type (fallback)</span>
           <Input value={s.test_type} onChange={(e) => setStep({ ...s, test_type: e.target.value })} />
-          <span className="text-[10px] text-gray-400">Used only for blocks that don&apos;t declare their own.</span>
+          <span className="text-[10px] text-ink-400">Used only for blocks that don&apos;t declare their own.</span>
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-500">Academic year</span>
+          <span className="font-medium text-ink-500">Academic year</span>
           <Input value={s.academic_year} onChange={(e) => setStep({ ...s, academic_year: e.target.value })} />
         </label>
         <div className="col-span-2 flex flex-col justify-end text-sm">
-          <div className="text-gray-500">Detected: <b>{s.resolved.length}</b> student blocks</div>
-          <div className="text-gray-500">
+          <div className="text-ink-500">Detected: <b>{s.resolved.length}</b> student blocks</div>
+          <div className="text-ink-500">
             <span className="text-green-700">{stats.matched} matched</span>
-            {stats.creating > 0 && <span className="ml-2 text-indigo-700">· {stats.creating} to create</span>}
-            {stats.skipped > 0 && <span className="ml-2 text-gray-500">· {stats.skipped} skipped</span>}
+            {stats.creating > 0 && <span className="ml-2 text-brand-800">· {stats.creating} to create</span>}
+            {stats.skipped > 0 && <span className="ml-2 text-ink-500">· {stats.skipped} skipped</span>}
           </div>
         </div>
       </div>
@@ -534,7 +534,7 @@ export default function UploadWizard({
         ))}
       </div>
 
-      <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-2 border-t border-gray-200 bg-white/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:mx-0">
+      <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-2 border-t border-ink-200 bg-white/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:mx-0">
         <Button variant="secondary" onClick={() => setStep({ kind: "select" })} leftIcon={<X className="h-4 w-4" />}>
           Cancel
         </Button>
@@ -564,17 +564,17 @@ export default function UploadWizard({
             </div>
             <ul className="max-h-64 space-y-2 overflow-y-auto">
               {conflicts.map((c) => (
-                <li key={c.key} className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs">
-                  <div className="font-medium text-gray-900">
+                <li key={c.key} className="rounded-md border border-ink-200 bg-ink-50 p-3 text-xs">
+                  <div className="font-medium text-ink-900">
                     {divNameById.get(c.divisionId)} · {c.testType} · starts {c.exam_start_date}
                   </div>
-                  <div className="mt-0.5 text-gray-600">
+                  <div className="mt-0.5 text-ink-600">
                     {c.conflicting_student_ids.length} student{c.conflicting_student_ids.length === 1 ? "" : "s"} already have marks in this exam.
                   </div>
                 </li>
               ))}
             </ul>
-            <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row sm:flex-wrap sm:justify-end">
+            <div className="flex flex-col gap-2 border-t border-ink-100 pt-3 sm:flex-row sm:flex-wrap sm:justify-end">
               <Button variant="secondary" onClick={() => setConflicts(null)}>Cancel — I&apos;ll adjust manually</Button>
               <Button variant="secondary" onClick={() => {
                 applyDefaultToConflicts("skip");
@@ -610,10 +610,10 @@ export default function UploadWizard({
 function StepHeader({ step, title }: { step: number; title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-700 text-sm font-semibold text-white">
         {step}
       </div>
-      <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+      <h1 className="text-xl font-semibold text-ink-900">{title}</h1>
     </div>
   );
 }
@@ -629,8 +629,8 @@ function StudentCard({
   const [open, setOpen] = useState(false);
 
   const badge = (() => {
-    if (resolved.mode === "skip") return { text: "Skipped", cls: "bg-gray-100 text-gray-600" };
-    if (resolved.mode === "create") return { text: "New student", cls: "bg-indigo-50 text-indigo-700" };
+    if (resolved.mode === "skip") return { text: "Skipped", cls: "bg-ink-100 text-ink-600" };
+    if (resolved.mode === "create") return { text: "New student", cls: "bg-brand-50 text-brand-800" };
     if (resolved.match.status === "matched") return { text: "Matched", cls: "bg-green-50 text-green-700" };
     if (resolved.match.status === "review")  return { text: "Review", cls: "bg-amber-50 text-amber-700" };
     return { text: "Unmatched", cls: "bg-red-50 text-red-700" };
@@ -639,31 +639,31 @@ function StudentCard({
   const currentRoster = rostersByDivision[resolved.division_id ?? ""] ?? [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
       <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-12">
         {/* Header: name + meta + badge */}
         <div className="min-w-0 lg:col-span-4">
           <div className="mb-1 flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">From file</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-500">From file</span>
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badge.cls}`}>{badge.text}</span>
           </div>
-          <div className="truncate text-sm font-semibold text-gray-900">
-            {resolved.raw.raw_student_name || <em className="text-gray-400">(no name)</em>}
+          <div className="truncate text-sm font-semibold text-ink-900">
+            {resolved.raw.raw_student_name || <em className="text-ink-400">(no name)</em>}
           </div>
-          <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-gray-500">
+          <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-ink-500">
             {resolved.raw.roll_no != null && <span>Roll #{resolved.raw.roll_no}</span>}
             {resolved.raw.division_canonical && <span>Div {displayDivision(resolved.raw.division_canonical, "mr")}</span>}
             {resolved.raw.gr_no && <span>GR {resolved.raw.gr_no}</span>}
-            {resolved.raw.test_type && <span className="text-indigo-600">Test: {resolved.raw.test_type}</span>}
+            {resolved.raw.test_type && <span className="text-brand-700">Test: {resolved.raw.test_type}</span>}
           </div>
         </div>
 
         {/* Division picker */}
         <div className="lg:col-span-3">
           <label className="flex flex-col gap-1 text-xs">
-            <span className="font-medium uppercase tracking-wide text-gray-500">Division</span>
+            <span className="font-medium uppercase tracking-wide text-ink-500">Division</span>
             <select
-              className="h-10 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="h-10 rounded-md border border-ink-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               value={resolved.division_id ?? ""}
               onChange={(e) => onChange({ ...resolved, division_id: e.target.value, chosen_id: null })}
             >
@@ -677,8 +677,8 @@ function StudentCard({
         {/* Action segmented control */}
         <div className="lg:col-span-5">
           <label className="flex flex-col gap-1 text-xs">
-            <span className="font-medium uppercase tracking-wide text-gray-500">Action</span>
-            <div className="grid grid-cols-3 gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
+            <span className="font-medium uppercase tracking-wide text-ink-500">Action</span>
+            <div className="grid grid-cols-3 gap-1 rounded-md border border-ink-300 bg-white p-0.5 text-xs">
               {(["existing", "create", "skip"] as Mode[]).map((m) => (
                 <button
                   key={m}
@@ -687,8 +687,8 @@ function StudentCard({
                   aria-pressed={resolved.mode === m}
                   className={`min-h-10 rounded px-2 py-1.5 font-medium ${
                     resolved.mode === m
-                      ? "bg-indigo-600 text-white"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-brand-700 text-white"
+                      : "text-ink-700 hover:bg-ink-100"
                   }`}
                 >
                   {m === "existing" ? "Map" : m === "create" ? "Create" : "Skip"}
@@ -699,8 +699,8 @@ function StudentCard({
 
           {resolved.mode === "existing" && resolved.chosen_id && (
             <label className="mt-3 flex flex-col gap-1 text-xs">
-              <span className="font-medium uppercase tracking-wide text-gray-500">On conflict</span>
-              <div className="grid grid-cols-2 gap-1 rounded-md border border-gray-300 bg-white p-0.5 text-xs">
+              <span className="font-medium uppercase tracking-wide text-ink-500">On conflict</span>
+              <div className="grid grid-cols-2 gap-1 rounded-md border border-ink-300 bg-white p-0.5 text-xs">
                 {(["replace", "skip"] as const).map((c) => (
                   <button
                     key={c}
@@ -709,8 +709,8 @@ function StudentCard({
                     aria-pressed={resolved.on_conflict === c}
                     className={`min-h-10 rounded px-2 py-1.5 font-medium ${
                       resolved.on_conflict === c
-                        ? "bg-indigo-600 text-white"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-brand-700 text-white"
+                        : "text-ink-700 hover:bg-ink-100"
                     }`}
                   >
                     {c === "replace" ? "Replace" : "Skip"}
@@ -725,9 +725,9 @@ function StudentCard({
         <div className="min-w-0 lg:col-span-12">
           {resolved.mode === "existing" && (
             <label className="flex flex-col gap-1 text-xs">
-              <span className="font-medium uppercase tracking-wide text-gray-500">Map to student</span>
+              <span className="font-medium uppercase tracking-wide text-ink-500">Map to student</span>
               <select
-                className="h-10 w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                className="h-10 w-full rounded-md border border-ink-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
                 value={resolved.chosen_id ?? ""}
                 onChange={(e) => onChange({ ...resolved, chosen_id: e.target.value || null })}
               >
@@ -737,20 +737,20 @@ function StudentCard({
                 ))}
               </select>
               {resolved.match.status !== "matched" && resolved.match.score > 0 && (
-                <span className="mt-0.5 text-[11px] text-gray-500">
+                <span className="mt-0.5 text-[11px] text-ink-500">
                   Match score {(resolved.match.score * 100).toFixed(0)}%
                 </span>
               )}
             </label>
           )}
           {resolved.mode === "create" && (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-              <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-indigo-700">
+            <div className="rounded-lg border border-brand-200 bg-brand-50 p-3">
+              <div className="mb-2 flex items-center gap-1 text-xs font-semibold text-brand-800">
                 <UserPlus className="h-3 w-3" /> Create in this division
               </div>
               <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                 <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-700">Roll no *</span>
+                  <span className="font-medium text-ink-700">Roll no *</span>
                   <Input required type="number" inputMode="numeric" min={1}
                     value={resolved.newStudent.roll_no === "" ? "" : resolved.newStudent.roll_no}
                     onChange={(e) => onChange({ ...resolved, newStudent: {
@@ -759,17 +759,17 @@ function StudentCard({
                     }})} />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-700">GR no</span>
+                  <span className="font-medium text-ink-700">GR no</span>
                   <Input value={resolved.newStudent.gr_no}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, gr_no: e.target.value }})} />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-700">Parent mobile *</span>
+                  <span className="font-medium text-ink-700">Parent mobile *</span>
                   <Input required inputMode="tel" value={resolved.newStudent.parent_mobile}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, parent_mobile: e.target.value }})} />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="font-medium text-gray-700">DOB *</span>
+                  <span className="font-medium text-ink-700">DOB *</span>
                   <Input required type="date" value={resolved.newStudent.dob}
                     onChange={(e) => onChange({ ...resolved, newStudent: { ...resolved.newStudent, dob: e.target.value }})} />
                 </label>
@@ -783,16 +783,16 @@ function StudentCard({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-center gap-1 border-t border-gray-100 bg-gray-50 px-4 py-2 text-xs font-medium text-indigo-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        className="flex w-full items-center justify-center gap-1 border-t border-ink-100 bg-ink-50 px-4 py-2 text-xs font-medium text-brand-700 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
       >
         {open ? "Hide" : "Show"} {resolved.raw.subjects.length} papers
       </button>
 
       {open && (
-        <div className="border-t border-gray-100 p-4">
+        <div className="border-t border-ink-100 p-4">
           <div className="-mx-4 overflow-x-auto sm:mx-0">
             <table className="w-full min-w-[500px] text-sm">
-              <thead className="text-left text-xs uppercase text-gray-500">
+              <thead className="text-left text-xs uppercase text-ink-500">
                 <tr>
                   <th className="py-1 pr-3">#</th>
                   <th className="py-1 pr-3">Date</th>
@@ -804,15 +804,15 @@ function StudentCard({
               </thead>
               <tbody>
                 {resolved.raw.subjects.map((sub, i) => (
-                  <tr key={i} className="border-t border-gray-100">
-                    <td className="py-1 pr-3 tabular-nums text-gray-600">{sub.paper_no ?? "-"}</td>
-                    <td className="py-1 pr-3 tabular-nums text-gray-600">{sub.date ?? "-"}</td>
-                    <td className="py-1 pr-3 font-medium text-gray-900">{sub.subject}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums text-gray-800">
-                      {sub.marks_obtained ?? <em className="text-gray-400">—</em>}
+                  <tr key={i} className="border-t border-ink-100">
+                    <td className="py-1 pr-3 tabular-nums text-ink-600">{sub.paper_no ?? "-"}</td>
+                    <td className="py-1 pr-3 tabular-nums text-ink-600">{sub.date ?? "-"}</td>
+                    <td className="py-1 pr-3 font-medium text-ink-900">{sub.subject}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums text-ink-800">
+                      {sub.marks_obtained ?? <em className="text-ink-400">—</em>}
                     </td>
-                    <td className="py-1 pr-3 text-right tabular-nums text-gray-500">{sub.max_marks ?? "-"}</td>
-                    <td className="py-1 text-gray-700">{sub.grade ?? "-"}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums text-ink-500">{sub.max_marks ?? "-"}</td>
+                    <td className="py-1 text-ink-700">{sub.grade ?? "-"}</td>
                   </tr>
                 ))}
               </tbody>

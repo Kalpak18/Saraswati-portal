@@ -2,12 +2,14 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Tone = "gray" | "danger" | "indigo";
+type Tone = "gray" | "danger" | "brand" | "indigo";
 
 const tones: Record<Tone, string> = {
-  gray:   "text-gray-500 hover:text-gray-900 hover:bg-gray-100",
+  gray:   "text-ink-500 hover:text-ink-900 hover:bg-ink-100",
   danger: "text-red-500 hover:text-red-700 hover:bg-red-50",
-  indigo: "text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50",
+  brand:  "text-brand-700 hover:text-brand-900 hover:bg-brand-50",
+  // Legacy alias — some callers were written before "brand" existed.
+  indigo: "text-brand-700 hover:text-brand-900 hover:bg-brand-50",
 };
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -33,7 +35,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       title={label}
       className={cn(
         "inline-flex items-center justify-center rounded-md transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         // Touch: 44×44 minimum. Desktop: comfortable 32×32.
         size === "md"

@@ -62,20 +62,20 @@ export default function SettingsClient({ initial }: { initial: Initial }) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900">{t(dict.settings.title, lang)}</h1>
+      <h1 className="text-xl font-semibold text-ink-900">{t(dict.settings.title, lang)}</h1>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md bg-gray-100">
+          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md bg-ink-100">
             {logoUrl ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
             ) : (
-              <span className="text-xs text-gray-400">No logo</span>
+              <span className="text-xs text-ink-400">No logo</span>
             )}
           </div>
           <div className="flex flex-col gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-ink-300 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50">
               <input type="file" accept="image/*" className="hidden"
                 onChange={(e) => e.target.files?.[0] && onLogo(e.target.files[0])} />
               {t(dict.settings.logo, lang)}
@@ -91,16 +91,16 @@ export default function SettingsClient({ initial }: { initial: Initial }) {
 
         <form onSubmit={onSave} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-gray-700">{t(dict.settings.name, lang)}</span>
+            <span className="font-medium text-ink-700">{t(dict.settings.name, lang)}</span>
             <Input required value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-gray-700">{t(dict.settings.address, lang)}</span>
+            <span className="font-medium text-ink-700">{t(dict.settings.address, lang)}</span>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               rows={3}
-              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="block w-full rounded-md border border-ink-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
           </label>
           <div className="flex justify-end">

@@ -14,7 +14,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-md bg-gray-200/70",
+        "animate-pulse rounded-md bg-ink-200/70",
         className,
       )}
       aria-hidden="true"
@@ -58,14 +58,14 @@ export function SkeletonTable({
   cols = 4,
 }: { rows?: number; cols?: number }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="flex gap-4 border-b border-gray-200 bg-gray-50 px-4 py-3">
+    <div className="overflow-hidden rounded-lg border border-ink-200 bg-white shadow-sm">
+      <div className="flex gap-4 border-b border-ink-200 bg-ink-50 px-4 py-3">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
       {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="flex gap-4 border-b border-gray-100 px-4 py-3 last:border-0">
+        <div key={r} className="flex gap-4 border-b border-ink-100 px-4 py-3 last:border-0">
           {Array.from({ length: cols }).map((_, c) => (
             <Skeleton key={c} className="h-4 flex-1" />
           ))}

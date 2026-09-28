@@ -44,12 +44,12 @@ export default function ResetPasswordForm({ email }: { email: string }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div>
-        <h2 className="text-base font-semibold text-gray-900">नवीन पासवर्ड · New password</h2>
-        <p className="mt-1 text-sm text-gray-500">{email}</p>
+        <h2 className="text-base font-semibold text-ink-900">नवीन पासवर्ड · New password</h2>
+        <p className="mt-1 text-sm text-ink-500">{email}</p>
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-gray-700">नवीन पासवर्ड · New password</span>
+        <span className="font-medium text-ink-700">नवीन पासवर्ड · New password</span>
         <Input
           type="password"
           required
@@ -58,11 +58,11 @@ export default function ResetPasswordForm({ email }: { email: string }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <span className="text-xs text-gray-400">किमान {MIN_LENGTH} अक्षरे · minimum {MIN_LENGTH} characters</span>
+        <span className="text-xs text-ink-400">किमान {MIN_LENGTH} अक्षरे · minimum {MIN_LENGTH} characters</span>
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-gray-700">पुन्हा टाका · Confirm password</span>
+        <span className="font-medium text-ink-700">पुन्हा टाका · Confirm password</span>
         <Input
           type="password"
           required

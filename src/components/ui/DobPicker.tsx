@@ -55,7 +55,7 @@ export function DobPicker({ value, onChange, disabled }: Props) {
   return (
     <div className="grid grid-cols-[1fr_1.6fr_1.1fr] gap-2">
       <label className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500">दिवस · Day</span>
+      <span className="text-xs text-ink-500">दिवस · Day</span>
       <Input
         placeholder="13"
         inputMode="numeric"
@@ -81,7 +81,7 @@ export function DobPicker({ value, onChange, disabled }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500">महिना · Month</span>
+      <span className="text-xs text-ink-500">महिना · Month</span>
       <Select
         disabled={disabled}
         value={month}
@@ -98,7 +98,7 @@ export function DobPicker({ value, onChange, disabled }: Props) {
       </label>
 
       <label className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500">वर्ष · Year</span>
+      <span className="text-xs text-ink-500">वर्ष · Year</span>
       <Input
         placeholder="2010"
         inputMode="numeric"

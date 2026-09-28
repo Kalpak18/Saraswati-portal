@@ -49,12 +49,12 @@ export function ConfirmDialog({
   return (
     <Modal open={open} onClose={onClose} size="md" showClose={false} title={undefined}>
       <div className="flex items-start gap-4">
-        <div className={`flex h-10 w-10 flex-none items-center justify-center rounded-full ${tone === "danger" ? "bg-red-50 text-red-600" : "bg-indigo-50 text-indigo-600"}`}>
+        <div className={`flex h-10 w-10 flex-none items-center justify-center rounded-full ${tone === "danger" ? "bg-red-50 text-red-600" : "bg-brand-50 text-brand-700"}`}>
           <AlertTriangle className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          {description && <div className="mt-1 text-sm text-gray-600">{description}</div>}
+          <h2 className="text-base font-semibold text-ink-900">{title}</h2>
+          {description && <div className="mt-1 text-sm text-ink-600">{description}</div>}
 
           {requiresChallenge && (
             <div className="mt-4">
@@ -63,7 +63,7 @@ export function ConfirmDialog({
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
                 placeholder={challengeText}
-                label={<>Type <span className="font-mono text-gray-900">{challengeText}</span> to confirm</>}
+                label={<>Type <span className="font-mono text-ink-900">{challengeText}</span> to confirm</>}
                 hint={challengeHint}
               />
             </div>

@@ -51,7 +51,7 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
         ]}
         title={exam.test_type}
         description={
-          <span className="tabular-nums text-gray-500">
+          <span className="tabular-nums text-ink-500">
             {dateRange} · {exam.academic_year} · {entered}/{list.length} students with marks
           </span>
         }
@@ -75,16 +75,16 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
             <th className="px-4 py-3 text-right">Actions</th>
           </>
         }
-        empty={<div className="text-center text-sm text-gray-500">No students in this division.</div>}
+        empty={<div className="text-center text-sm text-ink-500">No students in this division.</div>}
         rows={list.map((s) => {
           const hasMarks = withMarks.has(s.id);
           return {
             key: s.id,
             cells: (
               <>
-                <td className="px-4 py-3 tabular-nums text-gray-700">{s.roll_no}</td>
-                <td className="px-4 py-3 text-gray-500">{s.gr_no ?? "—"}</td>
-                <td className="px-4 py-3 font-medium text-gray-900">{s.student_name}</td>
+                <td className="px-4 py-3 tabular-nums text-ink-700">{s.roll_no}</td>
+                <td className="px-4 py-3 text-ink-500">{s.gr_no ?? "—"}</td>
+                <td className="px-4 py-3 font-medium text-ink-900">{s.student_name}</td>
                 <td className="px-4 py-3">
                   {hasMarks
                     ? <Badge tone="green">Marks entered</Badge>
@@ -95,14 +95,14 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
                     <div className="inline-flex items-center gap-3">
                       <Link
                         href={`/admin/results/${examId}/${s.id}/edit`}
-                        className="rounded text-sm text-gray-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                        className="rounded text-sm text-ink-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                       >
                         Edit
                       </Link>
                       <Link
                         href={`/admin/results/${examId}/${s.id}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 rounded text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        className="inline-flex items-center gap-1 rounded text-sm font-medium text-brand-700 hover:text-brand-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                       >
                         <FileText className="h-4 w-4" />
                         View card
@@ -111,7 +111,7 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
                   ) : (
                     <Link
                       href={`/admin/results/${examId}/${s.id}/edit`}
-                      className="rounded text-sm font-medium text-indigo-600 hover:text-indigo-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                      className="rounded text-sm font-medium text-brand-700 hover:text-brand-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
                     >
                       Enter marks
                     </Link>
@@ -123,10 +123,10 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
               <div>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                    <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
                       Roll {s.roll_no}{s.gr_no ? ` · GR ${s.gr_no}` : ""}
                     </div>
-                    <div className="mt-0.5 truncate text-base font-semibold text-gray-900">
+                    <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
                       {s.student_name}
                     </div>
                   </div>
@@ -140,14 +140,14 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
                       <Link
                         href={`/admin/results/${examId}/${s.id}`}
                         target="_blank"
-                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700"
+                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-800"
                       >
                         <FileText className="h-4 w-4" />
                         View card
                       </Link>
                       <Link
                         href={`/admin/results/${examId}/${s.id}/edit`}
-                        className="inline-flex items-center justify-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
+                        className="inline-flex items-center justify-center gap-1 rounded-md border border-ink-200 bg-white px-3 py-2 text-sm text-ink-700"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -156,7 +156,7 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
                   ) : (
                     <Link
                       href={`/admin/results/${examId}/${s.id}/edit`}
-                      className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700"
+                      className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-medium text-brand-800"
                     >
                       Enter marks
                     </Link>

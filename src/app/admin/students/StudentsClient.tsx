@@ -252,9 +252,9 @@ export default function StudentsClient({
       {/* Filter bar: division picker + search */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <label className="flex flex-col gap-1 text-xs sm:min-w-[220px]">
-          <span className="font-medium uppercase tracking-wide text-gray-500">Division</span>
+          <span className="font-medium uppercase tracking-wide text-ink-500">Division</span>
           <select
-            className="h-11 rounded-md border border-gray-300 bg-white px-3 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 sm:h-10"
+            className="h-11 rounded-md border border-ink-300 bg-white px-3 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 sm:h-10"
             value={selectedDivisionId}
             onChange={(e) => onDivChange(e.target.value)}
             aria-label="Filter by division"
@@ -264,7 +264,7 @@ export default function StudentsClient({
           </select>
         </label>
         <label className="flex flex-1 flex-col gap-1 text-xs">
-          <span className="font-medium uppercase tracking-wide text-gray-500">Search</span>
+          <span className="font-medium uppercase tracking-wide text-ink-500">Search</span>
           <Input
             placeholder="Name, roll, or GR"
             value={query}
@@ -314,12 +314,12 @@ export default function StudentsClient({
           key: s.id,
           cells: (
             <>
-              <td className="px-3 py-2 text-gray-700 tabular-nums">{s.roll_no}</td>
-              <td className="px-3 py-2 text-gray-500">{s.gr_no ?? "—"}</td>
-              <td className="px-3 py-2 font-medium text-gray-900">{s.student_name}</td>
-              <td className="px-3 py-2 tabular-nums text-gray-700">{s.parent_mobile}</td>
-              <td className="px-3 py-2 text-gray-700 tabular-nums">{s.dob}</td>
-              <td className="px-3 py-2 text-gray-500">{s.gender ?? "—"}</td>
+              <td className="px-3 py-2 text-ink-700 tabular-nums">{s.roll_no}</td>
+              <td className="px-3 py-2 text-ink-500">{s.gr_no ?? "—"}</td>
+              <td className="px-3 py-2 font-medium text-ink-900">{s.student_name}</td>
+              <td className="px-3 py-2 tabular-nums text-ink-700">{s.parent_mobile}</td>
+              <td className="px-3 py-2 text-ink-700 tabular-nums">{s.dob}</td>
+              <td className="px-3 py-2 text-ink-500">{s.gender ?? "—"}</td>
               <td className="px-3 py-2 text-right">
                 <div className="inline-flex items-center gap-1">
                   <IconButton label={`Edit ${s.student_name}`} onClick={() => openEdit(s)}>
@@ -341,10 +341,10 @@ export default function StudentsClient({
             <div>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
                     Roll {s.roll_no}{s.gr_no ? ` · GR ${s.gr_no}` : ""}
                   </div>
-                  <div className="mt-0.5 truncate text-base font-semibold text-gray-900">
+                  <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
                     {s.student_name}
                   </div>
                 </div>
@@ -364,17 +364,17 @@ export default function StudentsClient({
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <div>
-                  <dt className="font-medium uppercase tracking-wide text-gray-500">Mobile</dt>
-                  <dd className="tabular-nums text-gray-800 break-all">{s.parent_mobile}</dd>
+                  <dt className="font-medium uppercase tracking-wide text-ink-500">Mobile</dt>
+                  <dd className="tabular-nums text-ink-800 break-all">{s.parent_mobile}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium uppercase tracking-wide text-gray-500">DOB</dt>
-                  <dd className="tabular-nums text-gray-800">{s.dob}</dd>
+                  <dt className="font-medium uppercase tracking-wide text-ink-500">DOB</dt>
+                  <dd className="tabular-nums text-ink-800">{s.dob}</dd>
                 </div>
                 {s.gender && (
                   <div>
-                    <dt className="font-medium uppercase tracking-wide text-gray-500">Gender</dt>
-                    <dd className="text-gray-800">{s.gender}</dd>
+                    <dt className="font-medium uppercase tracking-wide text-ink-500">Gender</dt>
+                    <dd className="text-ink-800">{s.gender}</dd>
                   </div>
                 )}
               </dl>
@@ -393,23 +393,23 @@ export default function StudentsClient({
         {editing && (
           <form onSubmit={onSave} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Roll no *</span>
+              <span className="font-medium text-ink-700">Roll no *</span>
               <Input required type="number" min={1}
                 value={editing.roll_no === "" ? "" : editing.roll_no}
                 onChange={(e) => setEditing({ ...editing, roll_no: e.target.value === "" ? "" : Number(e.target.value) })} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">GR no</span>
+              <span className="font-medium text-ink-700">GR no</span>
               <Input value={editing.gr_no}
                 onChange={(e) => setEditing({ ...editing, gr_no: e.target.value })} />
             </label>
             <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="font-medium text-gray-700">Name *</span>
+              <span className="font-medium text-ink-700">Name *</span>
               <Input required value={editing.student_name}
                 onChange={(e) => setEditing({ ...editing, student_name: e.target.value })} />
             </label>
             <div className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="font-medium text-gray-700">Parent mobile *</span>
+              <span className="font-medium text-ink-700">Parent mobile *</span>
               <div className="flex items-stretch gap-2">
                 <CountryCodeSelect
                   value={editing.parent_country}
@@ -432,14 +432,14 @@ export default function StudentsClient({
               </div>
             </div>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">DOB *</span>
+              <span className="font-medium text-ink-700">DOB *</span>
               <Input required type="date" value={editing.dob}
                 onChange={(e) => setEditing({ ...editing, dob: e.target.value })} />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Gender</span>
+              <span className="font-medium text-ink-700">Gender</span>
               <select
-                className="h-10 rounded-md border border-gray-300 bg-white px-2 text-sm"
+                className="h-10 rounded-md border border-ink-300 bg-white px-2 text-sm"
                 value={editing.gender}
                 onChange={(e) => setEditing({ ...editing, gender: e.target.value })}
               >
@@ -450,7 +450,7 @@ export default function StudentsClient({
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Admission date</span>
+              <span className="font-medium text-ink-700">Admission date</span>
               <Input type="date" value={editing.admission_date}
                 onChange={(e) => setEditing({ ...editing, admission_date: e.target.value })} />
             </label>
@@ -459,7 +459,7 @@ export default function StudentsClient({
                 type="checkbox"
                 checked={editing.is_active}
                 onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
               />
               <span>Active — appears in class rosters &amp; parent lookup</span>
             </label>
@@ -479,23 +479,23 @@ export default function StudentsClient({
         size="lg"
       >
         <div className="flex flex-col gap-4 text-sm">
-          <p className="text-gray-600">
-            Columns: <code className="rounded bg-gray-100 px-1 text-xs">gr_no</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">roll_no</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">student_name</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">parent_mobile</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">dob</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">gender</code>,{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs">admission_date</code>.
+          <p className="text-ink-600">
+            Columns: <code className="rounded bg-ink-100 px-1 text-xs">gr_no</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">roll_no</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">student_name</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">parent_mobile</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">dob</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">gender</code>,{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">admission_date</code>.
             Dates in YYYY-MM-DD or DD/MM/YYYY.
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-ink-500">
             Get a ready-to-fill template at <b>Templates</b> in the sidebar.
           </p>
-          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center hover:border-indigo-400 hover:bg-indigo-50">
-            <Upload className="h-6 w-6 text-gray-400" />
-            <span className="text-sm font-medium text-gray-700">Choose an Excel file</span>
-            <span className="text-xs text-gray-500">.xlsx, .xls, or .csv</span>
+          <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 p-6 text-center hover:border-brand-400 hover:bg-brand-50">
+            <Upload className="h-6 w-6 text-ink-400" />
+            <span className="text-sm font-medium text-ink-700">Choose an Excel file</span>
+            <span className="text-xs text-ink-500">.xlsx, .xls, or .csv</span>
             <input
               ref={fileInputRef}
               type="file"

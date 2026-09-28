@@ -44,16 +44,16 @@ export default function LoginForm() {
           type="button"
           onClick={() => setLang("mr")}
           className={cn("rounded px-1.5 py-0.5 transition-colors",
-            lang === "mr" ? "font-semibold text-indigo-600" : "text-gray-500 hover:text-gray-800")}
+            lang === "mr" ? "font-semibold text-brand-700" : "text-ink-500 hover:text-ink-800")}
         >
           मराठी
         </button>
-        <span className="text-gray-300" aria-hidden>|</span>
+        <span className="text-ink-300" aria-hidden>|</span>
         <button
           type="button"
           onClick={() => setLang("en")}
           className={cn("rounded px-1.5 py-0.5 transition-colors",
-            lang === "en" ? "font-semibold text-indigo-600" : "text-gray-500 hover:text-gray-800")}
+            lang === "en" ? "font-semibold text-brand-700" : "text-ink-500 hover:text-ink-800")}
         >
           English
         </button>
@@ -83,7 +83,7 @@ export default function LoginForm() {
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="pointer-events-auto text-gray-400 hover:text-gray-700 focus:outline-none focus-visible:text-indigo-600"
+            className="pointer-events-auto text-ink-400 hover:text-ink-700 focus:outline-none focus-visible:text-brand-700"
             tabIndex={-1}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -100,7 +100,7 @@ export default function LoginForm() {
 
       <Link
         href="/forgot-password"
-        className="text-center text-sm text-indigo-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded"
+        className="text-center text-sm text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 rounded"
       >
         पासवर्ड विसरलात? · Forgot password?
       </Link>

@@ -45,9 +45,9 @@ export default function EditMarksForm({ examId, studentId, rows }: {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-ink-200 bg-white p-4 shadow-sm">
       <table className="w-full text-sm">
-        <thead className="text-left text-xs uppercase text-gray-500">
+        <thead className="text-left text-xs uppercase text-ink-500">
           <tr>
             <th className="py-1 pr-3">#</th>
             <th className="py-1 pr-3">Date</th>
@@ -59,11 +59,11 @@ export default function EditMarksForm({ examId, studentId, rows }: {
         </thead>
         <tbody>
           {state.map((r, i) => (
-            <tr key={r.subject_id} className="border-t border-gray-100">
-              <td className="py-1 pr-3 text-gray-600">{r.paper_no ?? "-"}</td>
-              <td className="py-1 pr-3 text-gray-600">{r.paper_date ?? "-"}</td>
-              <td className="py-1 pr-3 font-medium text-gray-900">{r.subject_name}</td>
-              <td className="py-1 pr-3 text-right text-gray-500">{r.max_marks ?? "-"}</td>
+            <tr key={r.subject_id} className="border-t border-ink-100">
+              <td className="py-1 pr-3 text-ink-600">{r.paper_no ?? "-"}</td>
+              <td className="py-1 pr-3 text-ink-600">{r.paper_date ?? "-"}</td>
+              <td className="py-1 pr-3 font-medium text-ink-900">{r.subject_name}</td>
+              <td className="py-1 pr-3 text-right text-ink-500">{r.max_marks ?? "-"}</td>
               <td className="py-1 pr-3">
                 <Input
                   type="number" step="any"

@@ -86,8 +86,8 @@ export function ImageUpload({
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {label && <label className="text-sm font-medium text-gray-700">{label}</label>}
-      {hint && <p className="text-xs text-gray-500">{hint}</p>}
+      {label && <label className="text-sm font-medium text-ink-700">{label}</label>}
+      {hint && <p className="text-xs text-ink-500">{hint}</p>}
 
       <input
         ref={inputRef}
@@ -102,7 +102,7 @@ export function ImageUpload({
       />
 
       {value ? (
-        <div className={cn("group relative w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-50", frame)}>
+        <div className={cn("group relative w-full overflow-hidden rounded-lg border border-ink-200 bg-ink-50", frame)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="" className="h-full w-full object-cover" />
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-linear-to-t from-black/50 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
@@ -137,17 +137,17 @@ export function ImageUpload({
           onClick={() => inputRef.current?.click()}
           disabled={disabled}
           className={cn(
-            "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center transition-colors",
-            "hover:border-indigo-400 hover:bg-indigo-50",
+            "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 p-6 text-center transition-colors",
+            "hover:border-brand-400 hover:bg-brand-50",
             "disabled:cursor-not-allowed disabled:opacity-70",
             frame,
           )}
         >
-          <ImagePlus className="h-6 w-6 text-gray-400" />
-          <div className="text-sm font-medium text-gray-700">
+          <ImagePlus className="h-6 w-6 text-ink-400" />
+          <div className="text-sm font-medium text-ink-700">
             {disabled ? "Uploading…" : "Choose photo"}
           </div>
-          <div className="text-xs text-gray-500">Max {maxDimension}px, auto-compressed</div>
+          <div className="text-xs text-ink-500">Max {maxDimension}px, auto-compressed</div>
         </button>
       )}
 
