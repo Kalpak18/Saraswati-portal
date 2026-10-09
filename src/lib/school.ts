@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { DEFAULT_NAME_MR } from "@/lib/schoolName";
 import { themeFromRow, type Theme } from "@/lib/theme";
+import { brandingFromRow, type Branding } from "@/lib/branding";
 
 // Used until the admin sets their own values in Settings.
 export const DEFAULT_ADDRESS = "Saraswati Vidyalaya, Savarkar Nagar, Ward No 3, Vasind, Maharashtra 421601";
@@ -18,6 +19,7 @@ export type SchoolInfo = {
   office_hours: string | null;
   office_hours_mr: string | null;
   theme: Theme;
+  branding: Branding;
 };
 
 // cache(): the layout and the page both ask; one query per request.
@@ -39,6 +41,7 @@ export const getSchoolInfo = cache(async (): Promise<SchoolInfo> => {
     office_hours: text("office_hours"),
     office_hours_mr: text("office_hours_mr"),
     theme: themeFromRow(data as { theme?: unknown } | null),
+    branding: brandingFromRow(data as { branding?: unknown } | null),
   };
 });
 

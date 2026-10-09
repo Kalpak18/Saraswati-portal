@@ -19,6 +19,7 @@ export default async function SettingsPage() {
         logo_url: data.logo_url,
       }}
       theme={data.theme}
+      branding={data.branding}
     />
   );
 }

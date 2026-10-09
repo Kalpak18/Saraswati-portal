@@ -7,6 +7,7 @@ import { DEFAULT_HERO_EFFECT, DEFAULT_SLIDE_SECONDS, slideDurationMs, type HeroE
 import { cn } from "@/lib/utils";
 import { useScrollProgress } from "../components/motion";
 import { schoolNameFor } from "@/lib/schoolName";
+import { lineFor, type Branding } from "@/lib/branding";
 
 /**
  * Opening shot of the home page: the school, full screen, as a slideshow of
@@ -30,6 +31,8 @@ export default function HomeHero({
     slideEffect?: HeroEffect;
     /** How tall the hero is; "original" follows the first slide's shape. */
     height?: HeroHeight;
+    logo_url?: string | null;
+    branding?: Branding;
   };
 }) {
   const { lang } = useLang();
@@ -241,8 +244,13 @@ export default function HomeHero({
         style={{ transform: "translate3d(0, calc(var(--p, 0) * -120px), 0)", opacity: "calc(1 - var(--p, 0) * 1.6)" }}
       >
         <div className="mx-auto w-full max-w-7xl text-white">
+          {data.branding?.hero.show_logo && data.logo_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={data.logo_url} alt="" className="animate-in fade-in mb-5 h-16 w-16 rounded-2xl bg-white/95 object-contain p-1.5 shadow-lg sm:h-20 sm:w-20" />
+          )}
           <div className="animate-in slide-up-fade duration-500 text-[11px] font-semibold uppercase tracking-[0.3em] text-accent-300">
-            {t("स्वागत आहे", "Welcome to")}
+            {/* The line above the name (e.g. the trust) replaces "Welcome to" when set. */}
+            {(data.branding?.hero.show_top && data.branding && lineFor(data.branding.top, lang)) || t("स्वागत आहे", "Welcome to")}
           </div>
           <h1
             className={cn(
@@ -253,6 +261,11 @@ export default function HomeHero({
           >
             {title}
           </h1>
+          {data.branding?.hero.show_bottom && lineFor(data.branding.bottom, lang) && (
+            <div className="animate-in slide-up-fade mt-4 max-w-3xl text-sm font-medium text-white/85 [animation-delay:240ms] sm:text-base">
+              {lineFor(data.branding.bottom, lang)}
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReportCardData } from "@/components/ReportCard";
+import { brandingFromRow } from "@/lib/branding";
+import { DEFAULT_NAME_MR } from "@/lib/schoolName";
+
+const DEFAULT_ADDRESS = "Saraswati Vidyalaya, Savarkar Nagar, Ward No 3, Vasind, Maharashtra 421601";
 
 export async function loadReportCard(
   supabase: SupabaseClient,
@@ -9,7 +13,8 @@ export async function loadReportCard(
   const [{ data: exam }, { data: student }, { data: school }, { data: subjects }, { data: marks }] = await Promise.all([
     supabase.from("exams").select("id, test_type, academic_year, exam_date, exam_start_date, exam_end_date, divisions(name, standards(name))").eq("id", examId).single(),
     supabase.from("students").select("roll_no, student_name").eq("id", studentId).single(),
-    supabase.from("school_settings").select("name, address, logo_url").limit(1).single(),
+    // "*": picks up name_mr / branding when those migrations have run.
+    supabase.from("school_settings").select("*").limit(1).single(),
     supabase.from("exam_subjects").select("id, subject_name, paper_no, paper_date, max_marks, display_order").eq("exam_id", examId).order("display_order", { ascending: true }),
     supabase.from("marks").select("subject_id, marks_obtained").eq("exam_id", examId).eq("student_id", studentId),
   ]);
@@ -28,9 +33,11 @@ export async function loadReportCard(
   return {
     school: {
       name: school?.name ?? "",
-      address: school?.address ?? "",
+      name_mr: (school?.name_mr as string | null)?.trim() || DEFAULT_NAME_MR,
+      address: school?.address?.trim() || DEFAULT_ADDRESS,
       logo_url: school?.logo_url ?? null,
     },
+    branding: brandingFromRow(school),
     className,
     test_type: exam.test_type,
     academic_year: exam.academic_year,

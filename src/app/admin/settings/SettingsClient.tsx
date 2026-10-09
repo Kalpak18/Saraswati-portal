@@ -4,25 +4,24 @@ import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useLang } from "@/lib/i18n/LangContext";
 import { dict, t } from "@/lib/i18n/dict";
-import { saveSettings as saveSettingsAction, uploadLogo as uploadLogoAction, removeLogo as removeLogoAction } from "./actions";
+import { saveSettings as saveSettingsAction } from "./actions";
 import AppearanceCard from "./AppearanceCard";
+import IdentityCard from "./IdentityCard";
+import type { Branding } from "@/lib/branding";
 import type { Theme } from "@/lib/theme";
 
 // Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
 const saveSettings = clientAction(saveSettingsAction);
-const uploadLogo = clientAction(uploadLogoAction);
-const removeLogo = clientAction(removeLogoAction);
 
 type Initial = {
   name: string; name_mr: string; phone: string; email: string; office_hours: string; office_hours_mr: string;
   address: string; map_url: string; logo_url: string | null };
 
-export default function SettingsClient({ initial, theme }: { initial: Initial; theme: Theme }) {
+export default function SettingsClient({ initial, theme, branding }: { initial: Initial; theme: Theme; branding: Branding }) {
   const { lang } = useLang();
   const router = useRouter();
   const [name, setName] = useState(initial.name);
@@ -33,7 +32,6 @@ export default function SettingsClient({ initial, theme }: { initial: Initial; t
   const [email, setEmail] = useState(initial.email);
   const [hours, setHours] = useState(initial.office_hours);
   const [hoursMr, setHoursMr] = useState(initial.office_hours_mr);
-  const [logoUrl, setLogoUrl] = useState(initial.logo_url);
   const [pending, startTransition] = useTransition();
 
   async function onSave(e: React.FormEvent) {
@@ -52,63 +50,16 @@ export default function SettingsClient({ initial, theme }: { initial: Initial; t
     });
   }
 
-  async function onLogo(file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    startTransition(async () => {
-      try {
-        const { url } = await uploadLogo(fd);
-        setLogoUrl(url);
-        toast.success(t(dict.settings.saved, lang));
-        router.refresh();
-      } catch (err) {
-        toast.error((err as Error).message);
-      }
-    });
-  }
-
-  async function onRemoveLogo() {
-    startTransition(async () => {
-      try {
-        await removeLogo();
-        setLogoUrl(null);
-        router.refresh();
-      } catch (err) {
-        toast.error((err as Error).message);
-      }
-    });
-  }
-
   return (
     <div className="mx-auto max-w-4xl space-y-6">
+      <IdentityCard
+        school={{ name: initial.name, name_mr: initial.name_mr, address: initial.address, logo_url: initial.logo_url }}
+        initial={branding}
+      />
       <AppearanceCard initial={theme} />
       <h1 className="text-xl font-semibold text-ink-900">{t(dict.settings.title, lang)}</h1>
 
       <div className="rounded-lg border border-ink-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-md bg-ink-100">
-            {logoUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
-            ) : (
-              <span className="text-xs text-ink-400">No logo</span>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-ink-300 bg-white px-3 py-1.5 text-sm text-ink-700 hover:bg-ink-50">
-              <input type="file" accept="image/*" className="hidden"
-                onChange={(e) => e.target.files?.[0] && onLogo(e.target.files[0])} />
-              {t(dict.settings.logo, lang)}
-            </label>
-            {logoUrl && (
-              <button onClick={onRemoveLogo} disabled={pending}
-                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline">
-                <Trash2 className="h-3 w-3" /> {t(dict.common.delete, lang)}
-              </button>
-            )}
-          </div>
-        </div>
-
         <form onSubmit={onSave} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-ink-700">{t(dict.settings.name, lang)}</span>

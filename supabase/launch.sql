@@ -63,3 +63,9 @@ create policy "auth_all_downloads" on downloads for all
 drop policy if exists "anon_read_downloads" on downloads;
 create policy "anon_read_downloads" on downloads for select
   to anon using (is_published = true);
+
+-- =========================================================
+-- 4. School identity / letterhead (lines above & below the name, where
+--    they and the logo show — Admin → Settings → School identity)
+-- =========================================================
+alter table school_settings add column if not exists branding jsonb not null default '{}'::jsonb;

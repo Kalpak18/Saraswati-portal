@@ -12,7 +12,7 @@ export default async function PublicLayout(props: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <PublicHeader school={{ name: s.name, name_mr: s.name_mr, logo_url: s.logo_url }} />
+      <PublicHeader school={{ name: s.name, name_mr: s.name_mr, logo_url: s.logo_url, branding: s.branding }} />
       <main className="flex-1">{props.children}</main>
       <PublicFooter school={s} />
     </div>

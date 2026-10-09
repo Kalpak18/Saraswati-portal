@@ -114,8 +114,43 @@ async function saveTheme__impl(input: unknown) {
   revalidatePath("/", "layout");
 }
 
+// ============================================================
+// School identity / letterhead
+// ============================================================
+const Bi = z.object({ en: z.string().trim().max(200), mr: z.string().trim().max(200) });
+const Shows = z.object({ show_top: z.boolean(), show_bottom: z.boolean() });
+const BrandingSchema = z.object({
+  top: Bi,
+  bottom: Bi,
+  header: Shows,
+  footer: Shows,
+  hero: Shows.extend({ show_logo: z.boolean() }),
+  report: Shows.extend({
+    show_address: z.boolean(),
+    align: z.enum(["center", "left"]),
+    logo_position: z.enum(["left", "top", "both", "none"]),
+    logo_size: z.enum(["sm", "md", "lg"]),
+    name_lang: z.enum(["en", "mr", "both"]),
+  }),
+});
+
+async function saveBranding__impl(input: unknown) {
+  const branding = BrandingSchema.parse(input);
+  const supabase = await requireUser();
+  const { data: existing } = await supabase.from("school_settings").select("id").limit(1).single();
+  if (!existing?.id) throw new Error("Save the school name first");
+  const { error } = await supabase.from("school_settings").update({ branding }).eq("id", existing.id);
+  if (error) {
+    if (/branding/.test(error.message)) throw new Error("Run the latest supabase/launch.sql in Supabase to enable School identity.");
+    throw new Error(error.message);
+  }
+  // Header, footer, hero and every report card read it.
+  revalidatePath("/", "layout");
+}
+
 // ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
 export async function saveSettings(...args: Parameters<typeof saveSettings__impl>) { return toResult(() => saveSettings__impl(...args)); }
 export async function uploadLogo(...args: Parameters<typeof uploadLogo__impl>) { return toResult(() => uploadLogo__impl(...args)); }
 export async function removeLogo(...args: Parameters<typeof removeLogo__impl>) { return toResult(() => removeLogo__impl(...args)); }
 export async function saveTheme(...args: Parameters<typeof saveTheme__impl>) { return toResult(() => saveTheme__impl(...args)); }
+export async function saveBranding(...args: Parameters<typeof saveBranding__impl>) { return toResult(() => saveBranding__impl(...args)); }

@@ -7,6 +7,7 @@ import { Menu, X, ChevronDown, ArrowRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { cn } from "@/lib/utils";
 import { schoolNameFor } from "@/lib/schoolName";
+import { lineFor, type Branding } from "@/lib/branding";
 
 /**
  * Top-of-page navigation for the school website. Slim by design: only four
@@ -21,7 +22,7 @@ import { schoolNameFor } from "@/lib/schoolName";
 export function PublicHeader({
   school,
 }: {
-  school: { name: string | null; name_mr: string | null; logo_url: string | null };
+  school: { name: string | null; name_mr: string | null; logo_url: string | null; branding: Branding };
 }) {
   const pathname = usePathname();
   const { lang, setLang } = useLang();
@@ -126,9 +127,21 @@ export function PublicHeader({
             </div>
           )}
           <div className="min-w-0">
+            {/* Identity lines (Settings → School identity). Hidden on the
+                narrowest phones, where the name alone already fills the bar. */}
+            {school.branding.header.show_top && lineFor(school.branding.top, lang) && (
+              <div className={cn("hidden truncate text-[10px] font-semibold uppercase tracking-wider sm:block", overlay ? "text-white/70" : "text-ink-500")}>
+                {lineFor(school.branding.top, lang)}
+              </div>
+            )}
             <div className={cn("truncate font-display text-base font-semibold leading-tight sm:text-lg", overlay ? "text-white" : "text-ink-900")}>
               {name}
             </div>
+            {school.branding.header.show_bottom && lineFor(school.branding.bottom, lang) && (
+              <div className={cn("hidden truncate text-[10px] font-medium sm:block", overlay ? "text-white/70" : "text-ink-500")}>
+                {lineFor(school.branding.bottom, lang)}
+              </div>
+            )}
           </div>
         </Link>
 

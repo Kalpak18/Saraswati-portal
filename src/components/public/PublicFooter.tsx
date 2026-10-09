@@ -4,13 +4,14 @@ import Link from "next/link";
 import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { schoolNameFor, establishedLabel } from "@/lib/schoolName";
+import { lineFor, type Branding } from "@/lib/branding";
 
 export function PublicFooter({
   school,
 }: {
   school: {
     name: string | null; name_mr: string | null; address: string; map_url: string; logo_url: string | null;
-    phone: string | null; email: string | null;
+    phone: string | null; email: string | null; branding: Branding;
   };
 }) {
   const { lang } = useLang();
@@ -60,7 +61,13 @@ export function PublicFooter({
                 </div>
               )}
               <div>
+                {school.branding.footer.show_top && lineFor(school.branding.top, lang) && (
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-ink-400">{lineFor(school.branding.top, lang)}</div>
+                )}
                 <div className="font-display text-xl font-semibold text-white">{name}</div>
+                {school.branding.footer.show_bottom && lineFor(school.branding.bottom, lang) && (
+                  <div className="text-xs text-ink-400">{lineFor(school.branding.bottom, lang)}</div>
+                )}
                 <div className="text-xs font-medium uppercase tracking-widest text-accent-300">{establishedLabel(lang)}</div>
               </div>
             </div>

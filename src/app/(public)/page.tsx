@@ -26,6 +26,8 @@ export default async function HomePage() {
           slideSeconds: slideSecondsFromRow(hero),
           slideEffect: slideEffectFromRow(hero),
           height: heroHeightFromRow(hero),
+          logo_url: school.logo_url,
+          branding: school.branding,
         }}
       />
       <PageSections page="home" />

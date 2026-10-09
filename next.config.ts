@@ -16,6 +16,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      // Default is 1 MB, which rejected logos between 1 and 2 MB before our
+      // own size check ran. Photos are resized in the browser first; videos
+      // and documents bypass actions via signed URLs.
+      bodySizeLimit: "3mb",
+    },
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
