@@ -1,18 +1,24 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Send } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { submitContactMessage } from "./actions";
+import { submitContactMessage as submitContactMessageAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const submitContactMessage = clientAction(submitContactMessageAction);
 
 export default function ContactForm() {
   const { lang } = useLang();
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
   const [pending, startTransition] = useTransition();
   const [sent, setSent] = useState(false);
+  // Hidden "website" field: people never see it, spam bots fill it in.
+  const [trap, setTrap] = useState("");
   const [form, setForm] = useState({
     name: "", email: "", phone: "", subject: "", message: "",
   });
@@ -21,7 +27,7 @@ export default function ContactForm() {
     e.preventDefault();
     startTransition(async () => {
       try {
-        await submitContactMessage(form);
+        await submitContactMessage({ ...form, website: trap });
         setSent(true);
       } catch (err) {
         toast.error((err as Error).message);
@@ -60,6 +66,9 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+        <label>Website <input tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} /></label>
+      </div>
       <Input
         label={t("तुमचं नाव", "Your name")}
         required

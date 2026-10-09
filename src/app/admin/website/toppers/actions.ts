@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -29,7 +30,7 @@ const GeneratePayload = z.object({
   top_n: z.number().int().min(1).max(25),
 });
 
-export async function generateToppers(input: unknown) {
+async function generateToppers__impl(input: unknown) {
   const p = GeneratePayload.parse(input);
   const supabase = await requireUser();
 
@@ -124,7 +125,7 @@ export async function generateToppers(input: unknown) {
   return { count: rows.length };
 }
 
-export async function clearToppers(examIds: string[]) {
+async function clearToppers__impl(examIds: string[]) {
   const ids = z.array(z.string().uuid()).min(1).parse(examIds);
   const supabase = await requireUser();
   const { error } = await supabase.from("toppers").delete().in("exam_id", ids);
@@ -139,7 +140,7 @@ const TopperUpdate = z.object({
   photo_url: z.string().max(500).nullable().optional(),
 });
 
-export async function updateTopper(input: unknown) {
+async function updateTopper__impl(input: unknown) {
   const { id, ...patch } = TopperUpdate.parse(input);
   const supabase = await requireUser();
   const { error } = await supabase.from("toppers").update(patch).eq("id", id);
@@ -147,9 +148,15 @@ export async function updateTopper(input: unknown) {
   revalidateToppers();
 }
 
-export async function uploadTopperImage(fd: FormData): Promise<{ url: string }> {
+async function uploadTopperImage__impl(fd: FormData): Promise<{ url: string }> {
   await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
   return uploadPublicImage("toppers", file);
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function generateToppers(...args: Parameters<typeof generateToppers__impl>) { return toResult(() => generateToppers__impl(...args)); }
+export async function clearToppers(...args: Parameters<typeof clearToppers__impl>) { return toResult(() => clearToppers__impl(...args)); }
+export async function updateTopper(...args: Parameters<typeof updateTopper__impl>) { return toResult(() => updateTopper__impl(...args)); }
+export async function uploadTopperImage(...args: Parameters<typeof uploadTopperImage__impl>) { return toResult(() => uploadTopperImage__impl(...args)); }

@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, GripVertical, Plus, Trash2 } from "lucide-react";
@@ -17,7 +18,11 @@ import { CATEGORIES, LEVELS } from "@/lib/achievements";
 import { cn } from "@/lib/utils";
 import { FeatureIcon } from "@/components/FeatureIcon";
 import { moveItem, useDragSort } from "@/components/ui/useDragSort";
-import { saveSection, uploadSectionImage } from "./actions";
+import { saveSection as saveSectionAction, uploadSectionImage as uploadSectionImageAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveSection = clientAction(saveSectionAction);
+const uploadSectionImage = clientAction(uploadSectionImageAction);
 
 const FIELD_LABEL: Record<Exclude<keyof SectionContent, "photos">, string> = {
   eyebrow: "Small label above the heading",

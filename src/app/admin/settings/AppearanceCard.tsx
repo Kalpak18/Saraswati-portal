@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -7,7 +8,10 @@ import { Check, Palette } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ACCENT_PRESETS, BRAND_PRESETS, CORNER_STYLES, HEADING_FONTS, themeCss, type Theme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import { saveTheme } from "./actions";
+import { saveTheme as saveThemeAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveTheme = clientAction(saveThemeAction);
 
 /**
  * Site-wide look: brand colour, accent colour, heading font, corner style.

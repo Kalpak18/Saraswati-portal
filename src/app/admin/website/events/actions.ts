@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -35,7 +36,7 @@ const EventSchema = z.object({
   })).max(200),
 });
 
-export async function saveEvent(input: unknown): Promise<{ id: string; slug: string }> {
+async function saveEvent__impl(input: unknown): Promise<{ id: string; slug: string }> {
   const p = EventSchema.parse(input);
   const supabase = await requireUser();
 
@@ -95,7 +96,7 @@ export async function saveEvent(input: unknown): Promise<{ id: string; slug: str
   return { id: id!, slug };
 }
 
-export async function deleteEvent(id: string) {
+async function deleteEvent__impl(id: string) {
   const eid = z.string().uuid().parse(id);
   const supabase = await requireUser();
   const [{ data: ev }, { data: photos }] = await Promise.all([
@@ -111,9 +112,14 @@ export async function deleteEvent(id: string) {
   revalidatePath("/admin/website/events");
 }
 
-export async function uploadEventImage(fd: FormData): Promise<{ url: string }> {
+async function uploadEventImage__impl(fd: FormData): Promise<{ url: string }> {
   await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
   return uploadPublicImage("events", file);
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveEvent(...args: Parameters<typeof saveEvent__impl>) { return toResult(() => saveEvent__impl(...args)); }
+export async function deleteEvent(...args: Parameters<typeof deleteEvent__impl>) { return toResult(() => deleteEvent__impl(...args)); }
+export async function uploadEventImage(...args: Parameters<typeof uploadEventImage__impl>) { return toResult(() => uploadEventImage__impl(...args)); }

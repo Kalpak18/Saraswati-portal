@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, Home, Search, Users } from "lucide-react";
@@ -11,12 +12,11 @@ import { Input } from "@/components/ui/Input";
 import { DobPicker } from "@/components/ui/DobPicker";
 import { CountryCodeSelect } from "@/components/ui/CountryCodeSelect";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
-import {
-  findStudents,
-  listExamsForStudent,
-  type LookupExam,
-  type LookupStudent,
-} from "./actions";
+import { findStudents as findStudentsAction, listExamsForStudent as listExamsForStudentAction, type LookupExam, type LookupStudent } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const findStudents = clientAction(findStudentsAction);
+const listExamsForStudent = clientAction(listExamsForStudentAction);
 
 type School = { name: string | null; name_mr: string | null; logo_url: string | null };
 type Step = "identify" | "children" | "student";

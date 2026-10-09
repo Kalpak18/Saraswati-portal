@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -12,8 +13,13 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { VideoUpload } from "@/components/ui/VideoUpload";
 import { HERO_EFFECTS, HERO_HEIGHTS, SLIDE_SECONDS_CHOICES, type HeroEffect, type HeroHeight, type HeroSlide } from "@/lib/hero";
-import { saveHero, uploadHeroImage, startHeroVideoUpload } from "./actions";
+import { saveHero as saveHeroAction, uploadHeroImage as uploadHeroImageAction, startHeroVideoUpload as startHeroVideoUploadAction } from "./actions";
 import { cn } from "@/lib/utils";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveHero = clientAction(saveHeroAction);
+const uploadHeroImage = clientAction(uploadHeroImageAction);
+const startHeroVideoUpload = clientAction(startHeroVideoUploadAction);
 
 // A slide being edited may not have its file uploaded yet.
 type DraftSlide = Omit<HeroSlide, "url"> & { url: string | null };

@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -35,7 +36,7 @@ const HeroSchema = z.object({
 const urlsOf = (slides: z.infer<typeof Slide>[]) =>
   new Set(slides.flatMap((s) => [s.url, s.poster_url ?? null]).filter((u): u is string => !!u));
 
-export async function saveHero(input: unknown): Promise<{ warning?: string }> {
+async function saveHero__impl(input: unknown): Promise<{ warning?: string }> {
   const p = HeroSchema.parse(input);
   const supabase = await requireUser();
 
@@ -89,7 +90,7 @@ export async function saveHero(input: unknown): Promise<{ warning?: string }> {
   return { warning };
 }
 
-export async function uploadHeroImage(fd: FormData): Promise<{ url: string }> {
+async function uploadHeroImage__impl(fd: FormData): Promise<{ url: string }> {
   await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
@@ -97,7 +98,12 @@ export async function uploadHeroImage(fd: FormData): Promise<{ url: string }> {
 }
 
 /** Hands the browser a one-time URL to upload a hero video directly. */
-export async function startHeroVideoUpload(fileName: string) {
+async function startHeroVideoUpload__impl(fileName: string) {
   await requireUser();
   return createSignedVideoUpload(z.string().min(1).max(200).parse(fileName));
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveHero(...args: Parameters<typeof saveHero__impl>) { return toResult(() => saveHero__impl(...args)); }
+export async function uploadHeroImage(...args: Parameters<typeof uploadHeroImage__impl>) { return toResult(() => uploadHeroImage__impl(...args)); }
+export async function startHeroVideoUpload(...args: Parameters<typeof startHeroVideoUpload__impl>) { return toResult(() => startHeroVideoUpload__impl(...args)); }

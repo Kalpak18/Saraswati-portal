@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
@@ -18,8 +19,12 @@ import {
 } from "@/lib/excel/parseAchievements";
 import { matchInRoster } from "@/lib/match/rosterMatch";
 import { CATEGORIES, LEVELS, levelLabel, ordinal, type Level } from "@/lib/achievements";
-import { checkAchievementImport, importAchievements } from "../actions";
+import { checkAchievementImport as checkAchievementImportAction, importAchievements as importAchievementsAction } from "../actions";
 import type { RosterStudent } from "../roster";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const checkAchievementImport = clientAction(checkAchievementImportAction);
+const importAchievements = clientAction(importAchievementsAction);
 
 type Status = "matched" | "review" | "unmatched";
 

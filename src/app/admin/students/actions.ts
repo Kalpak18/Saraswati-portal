@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -15,7 +16,7 @@ const StudentSchema = z.object({
   is_active: z.boolean().default(true),
 });
 
-export async function saveStudent(input: z.infer<typeof StudentSchema>) {
+async function saveStudent__impl(input: z.infer<typeof StudentSchema>) {
   const p = StudentSchema.parse(input);
   const supabase = await createSupabaseServer();
   const payload = {
@@ -38,7 +39,7 @@ export async function saveStudent(input: z.infer<typeof StudentSchema>) {
   revalidatePath("/admin");
 }
 
-export async function deleteStudent(id: string) {
+async function deleteStudent__impl(id: string) {
   const supabase = await createSupabaseServer();
   const { error } = await supabase.from("students").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -54,7 +55,7 @@ const ImportRowSchema = z.object({
   gender: z.string().max(20).nullable().optional(),
 });
 
-export async function importStudents(divisionId: string, rows: unknown[]) {
+async function importStudents__impl(divisionId: string, rows: unknown[]) {
   if (!divisionId) throw new Error("division_id required");
   const parsed = z.array(ImportRowSchema).parse(rows);
   const supabase = await createSupabaseServer();
@@ -74,3 +75,8 @@ export async function importStudents(divisionId: string, rows: unknown[]) {
   revalidatePath("/admin");
   return { inserted: count ?? payload.length };
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveStudent(...args: Parameters<typeof saveStudent__impl>) { return toResult(() => saveStudent__impl(...args)); }
+export async function deleteStudent(...args: Parameters<typeof deleteStudent__impl>) { return toResult(() => deleteStudent__impl(...args)); }
+export async function importStudents(...args: Parameters<typeof importStudents__impl>) { return toResult(() => importStudents__impl(...args)); }

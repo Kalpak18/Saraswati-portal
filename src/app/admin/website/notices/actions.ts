@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -39,7 +40,7 @@ const NoticeSchema = z.object({
   path: ["expires_on"],
 });
 
-export async function saveNotice(input: unknown) {
+async function saveNotice__impl(input: unknown) {
   const { id, ...row } = NoticeSchema.parse(input);
   const supabase = await requireUser();
   if (id) {
@@ -56,7 +57,7 @@ export async function saveNotice(input: unknown) {
   revalidate();
 }
 
-export async function deleteNotice(id: string) {
+async function deleteNotice__impl(id: string) {
   const nid = z.string().uuid().parse(id);
   const supabase = await requireUser();
   const { data: row } = await supabase.from("notices").select("attachment_url").eq("id", nid).maybeSingle();
@@ -66,7 +67,7 @@ export async function deleteNotice(id: string) {
   revalidate();
 }
 
-export async function setNoticeFlags(id: string, flags: { is_pinned?: boolean; is_published?: boolean }) {
+async function setNoticeFlags__impl(id: string, flags: { is_pinned?: boolean; is_published?: boolean }) {
   const nid = z.string().uuid().parse(id);
   const patch = z.object({ is_pinned: z.boolean().optional(), is_published: z.boolean().optional() }).parse(flags);
   const supabase = await requireUser();
@@ -76,7 +77,13 @@ export async function setNoticeFlags(id: string, flags: { is_pinned?: boolean; i
 }
 
 /** One-time URL for the browser to upload a PDF / image notice directly. */
-export async function startNoticeUpload(fileName: string) {
+async function startNoticeUpload__impl(fileName: string) {
   await requireUser();
   return createSignedNoticeUpload(z.string().min(1).max(200).parse(fileName));
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveNotice(...args: Parameters<typeof saveNotice__impl>) { return toResult(() => saveNotice__impl(...args)); }
+export async function deleteNotice(...args: Parameters<typeof deleteNotice__impl>) { return toResult(() => deleteNotice__impl(...args)); }
+export async function setNoticeFlags(...args: Parameters<typeof setNoticeFlags__impl>) { return toResult(() => setNoticeFlags__impl(...args)); }
+export async function startNoticeUpload(...args: Parameters<typeof startNoticeUpload__impl>) { return toResult(() => startNoticeUpload__impl(...args)); }

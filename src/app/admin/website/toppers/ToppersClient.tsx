@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -12,7 +13,12 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
-import { generateToppers, clearToppers, updateTopper } from "./actions";
+import { generateToppers as generateToppersAction, clearToppers as clearToppersAction, updateTopper as updateTopperAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const generateToppers = clientAction(generateToppersAction);
+const clearToppers = clientAction(clearToppersAction);
+const updateTopper = clientAction(updateTopperAction);
 
 type Topper = {
   id: string;

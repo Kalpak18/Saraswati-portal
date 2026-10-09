@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -25,7 +26,7 @@ const SettingsSchema = z.object({
     .optional(),
 });
 
-export async function saveSettings(input: z.input<typeof SettingsSchema>) {
+async function saveSettings__impl(input: z.input<typeof SettingsSchema>) {
   const parsed = SettingsSchema.parse(input);
   const supabase = await createSupabaseServer();
   const { data: existing } = await supabase.from("school_settings").select("id").limit(1).single();
@@ -56,7 +57,7 @@ async function requireUser() {
 // Raster images only: an SVG can carry script, and anything else isn't a logo.
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
-export async function uploadLogo(formData: FormData) {
+async function uploadLogo__impl(formData: FormData) {
   // Uploads go through the full-access storage key, so the caller must be
   // a signed-in admin — RLS can't protect this path.
   const supabase = await requireUser();
@@ -77,7 +78,7 @@ export async function uploadLogo(formData: FormData) {
   revalidatePath("/", "layout");
   return { url };
 }
-export async function removeLogo() {
+async function removeLogo__impl() {
   const supabase = await requireUser();
   const { data: existing } = await supabase.from("school_settings").select("id, logo_url").limit(1).single();
   if (existing?.id) {
@@ -97,7 +98,7 @@ const ThemeSchema = z.object({
   corners: z.enum(CORNER_STYLES.map((c) => c.key) as [string, ...string[]]),
 });
 
-export async function saveTheme(input: unknown) {
+async function saveTheme__impl(input: unknown) {
   const theme = ThemeSchema.parse(input);
   const supabase = await createSupabaseServer();
   const { data: user } = await supabase.auth.getUser();
@@ -112,3 +113,9 @@ export async function saveTheme(input: unknown) {
   // Every page reads the theme from the root layout.
   revalidatePath("/", "layout");
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveSettings(...args: Parameters<typeof saveSettings__impl>) { return toResult(() => saveSettings__impl(...args)); }
+export async function uploadLogo(...args: Parameters<typeof uploadLogo__impl>) { return toResult(() => uploadLogo__impl(...args)); }
+export async function removeLogo(...args: Parameters<typeof removeLogo__impl>) { return toResult(() => removeLogo__impl(...args)); }
+export async function saveTheme(...args: Parameters<typeof saveTheme__impl>) { return toResult(() => saveTheme__impl(...args)); }

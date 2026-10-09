@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -22,11 +23,16 @@ import {
   CATEGORIES, LEVELS, categoryLabel, levelLabel, levelRank, detectMedal, ordinal,
 } from "@/lib/achievements";
 import { parseNum } from "@/lib/i18n/normalize";
-import {
-  saveAchievement, deleteAchievements, setAchievementsPublished, deleteImportBatch, uploadAchievementImage,
-} from "./actions";
+import { saveAchievement as saveAchievementAction, deleteAchievements as deleteAchievementsAction, setAchievementsPublished as setAchievementsPublishedAction, deleteImportBatch as deleteImportBatchAction, uploadAchievementImage as uploadAchievementImageAction } from "./actions";
 import { StudentPicker } from "./StudentPicker";
 import type { RosterStudent } from "./roster";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveAchievement = clientAction(saveAchievementAction);
+const deleteAchievements = clientAction(deleteAchievementsAction);
+const setAchievementsPublished = clientAction(setAchievementsPublishedAction);
+const deleteImportBatch = clientAction(deleteImportBatchAction);
+const uploadAchievementImage = clientAction(uploadAchievementImageAction);
 
 export type AchievementRow = {
   id: string;

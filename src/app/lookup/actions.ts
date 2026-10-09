@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { z } from "zod";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { enforceLookupRateLimit, RateLimitError } from "@/lib/rateLimit";
@@ -36,7 +37,7 @@ export type LookupExam = {
 const STUDENT_FIELDS =
   "id, roll_no, student_name, division_id, divisions(name, standards(name, academic_year))";
 
-export async function findStudents(input: unknown): Promise<LookupStudent[]> {
+async function findStudents__impl(input: unknown): Promise<LookupStudent[]> {
   const parsed = LookupSchema.safeParse(input);
   if (!parsed.success) throw new Error("अपूर्ण माहिती · Incomplete details");
   const p = parsed.data;
@@ -99,7 +100,7 @@ export async function findStudents(input: unknown): Promise<LookupStudent[]> {
   });
 }
 
-export async function listExamsForStudent(studentId: string): Promise<LookupExam[]> {
+async function listExamsForStudent__impl(studentId: string): Promise<LookupExam[]> {
   const admin = createSupabaseAdmin();
 
   // Only exams where this student has marks
@@ -158,3 +159,7 @@ export async function listExamsForStudent(studentId: string): Promise<LookupExam
     };
   });
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function findStudents(...args: Parameters<typeof findStudents__impl>) { return toResult(() => findStudents__impl(...args)); }
+export async function listExamsForStudent(...args: Parameters<typeof listExamsForStudent__impl>) { return toResult(() => listExamsForStudent__impl(...args)); }

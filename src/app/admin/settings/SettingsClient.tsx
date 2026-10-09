@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -8,9 +9,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useLang } from "@/lib/i18n/LangContext";
 import { dict, t } from "@/lib/i18n/dict";
-import { saveSettings, uploadLogo, removeLogo } from "./actions";
+import { saveSettings as saveSettingsAction, uploadLogo as uploadLogoAction, removeLogo as removeLogoAction } from "./actions";
 import AppearanceCard from "./AppearanceCard";
 import type { Theme } from "@/lib/theme";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveSettings = clientAction(saveSettingsAction);
+const uploadLogo = clientAction(uploadLogoAction);
+const removeLogo = clientAction(removeLogoAction);
 
 type Initial = {
   name: string; name_mr: string; phone: string; email: string; office_hours: string; office_hours_mr: string;

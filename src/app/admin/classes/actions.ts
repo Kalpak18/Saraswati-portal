@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -15,7 +16,7 @@ const StandardSchema = z.object({
   display_order: z.number().int().default(0),
 });
 
-export async function saveStandard(input: z.infer<typeof StandardSchema>) {
+async function saveStandard__impl(input: z.infer<typeof StandardSchema>) {
   const parsed = StandardSchema.parse(input);
   // Canonicalize standard name: 10 / 10th / १० वी → "१० वी"
   const canonicalName = normalizeStandard(parsed.name) ?? parsed.name.trim();
@@ -34,7 +35,7 @@ export async function saveStandard(input: z.infer<typeof StandardSchema>) {
   revalidatePath("/admin");
 }
 
-export async function deleteStandard(id: string) {
+async function deleteStandard__impl(id: string) {
   const supabase = await createSupabaseServer();
   const { error } = await supabase.from("standards").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -53,7 +54,7 @@ const DivisionSchema = z.object({
   display_order: z.number().int().default(0),
 });
 
-export async function saveDivision(input: z.infer<typeof DivisionSchema>) {
+async function saveDivision__impl(input: z.infer<typeof DivisionSchema>) {
   const parsed = DivisionSchema.parse(input);
   // Canonicalize division name: A/1/अ → "अ"
   const canonicalName = normalizeDivision(parsed.name) ?? parsed.name.trim();
@@ -79,10 +80,16 @@ export async function saveDivision(input: z.infer<typeof DivisionSchema>) {
   revalidatePath("/admin");
 }
 
-export async function deleteDivision(id: string) {
+async function deleteDivision__impl(id: string) {
   const supabase = await createSupabaseServer();
   const { error } = await supabase.from("divisions").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function saveStandard(...args: Parameters<typeof saveStandard__impl>) { return toResult(() => saveStandard__impl(...args)); }
+export async function deleteStandard(...args: Parameters<typeof deleteStandard__impl>) { return toResult(() => deleteStandard__impl(...args)); }
+export async function saveDivision(...args: Parameters<typeof saveDivision__impl>) { return toResult(() => saveDivision__impl(...args)); }
+export async function deleteDivision(...args: Parameters<typeof deleteDivision__impl>) { return toResult(() => deleteDivision__impl(...args)); }

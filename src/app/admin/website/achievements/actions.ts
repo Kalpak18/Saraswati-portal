@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -76,7 +77,7 @@ const ImportPayload = z.object({
   rows: z.array(ImportRow).min(1).max(5000),
 });
 
-export async function checkAchievementImport(key: string) {
+async function checkAchievementImport__impl(key: string) {
   const { supabase } = await requireUser();
   const { data } = await supabase
     .from("achievement_imports")
@@ -86,7 +87,7 @@ export async function checkAchievementImport(key: string) {
   return data;
 }
 
-export async function importAchievements(input: unknown) {
+async function importAchievements__impl(input: unknown) {
   const p = ImportPayload.parse(input);
   const { supabase, userId } = await requireUser();
 
@@ -189,7 +190,7 @@ export async function importAchievements(input: unknown) {
 }
 
 // Undo a whole import (rows it created or last touched).
-export async function deleteImportBatch(batchId: string) {
+async function deleteImportBatch__impl(batchId: string) {
   const id = z.string().uuid().parse(batchId);
   const { supabase } = await requireUser();
   const { error } = await supabase.from("achievements").delete().eq("import_batch_id", id);
@@ -222,7 +223,7 @@ const AchievementSchema = z.object({
   is_published: z.boolean(),
 });
 
-export async function saveAchievement(input: unknown) {
+async function saveAchievement__impl(input: unknown) {
   const p = AchievementSchema.parse(input);
   const { supabase } = await requireUser();
 
@@ -247,7 +248,7 @@ export async function saveAchievement(input: unknown) {
   revalidateShowcase();
 }
 
-export async function deleteAchievements(ids: string[]) {
+async function deleteAchievements__impl(ids: string[]) {
   const list = z.array(z.string().uuid()).min(1).parse(ids);
   const { supabase } = await requireUser();
   const { data: rows } = await supabase.from("achievements").select("photo_url").in("id", list);
@@ -257,7 +258,7 @@ export async function deleteAchievements(ids: string[]) {
   revalidateShowcase();
 }
 
-export async function setAchievementsPublished(ids: string[], published: boolean) {
+async function setAchievementsPublished__impl(ids: string[], published: boolean) {
   const list = z.array(z.string().uuid()).min(1).parse(ids);
   const { supabase } = await requireUser();
   const { error } = await supabase.from("achievements").update({ is_published: published }).in("id", list);
@@ -265,9 +266,18 @@ export async function setAchievementsPublished(ids: string[], published: boolean
   revalidateShowcase();
 }
 
-export async function uploadAchievementImage(fd: FormData): Promise<{ url: string }> {
+async function uploadAchievementImage__impl(fd: FormData): Promise<{ url: string }> {
   await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
   return uploadPublicImage("achievements", file);
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function checkAchievementImport(...args: Parameters<typeof checkAchievementImport__impl>) { return toResult(() => checkAchievementImport__impl(...args)); }
+export async function importAchievements(...args: Parameters<typeof importAchievements__impl>) { return toResult(() => importAchievements__impl(...args)); }
+export async function deleteImportBatch(...args: Parameters<typeof deleteImportBatch__impl>) { return toResult(() => deleteImportBatch__impl(...args)); }
+export async function saveAchievement(...args: Parameters<typeof saveAchievement__impl>) { return toResult(() => saveAchievement__impl(...args)); }
+export async function deleteAchievements(...args: Parameters<typeof deleteAchievements__impl>) { return toResult(() => deleteAchievements__impl(...args)); }
+export async function setAchievementsPublished(...args: Parameters<typeof setAchievementsPublished__impl>) { return toResult(() => setAchievementsPublished__impl(...args)); }
+export async function uploadAchievementImage(...args: Parameters<typeof uploadAchievementImage__impl>) { return toResult(() => uploadAchievementImage__impl(...args)); }

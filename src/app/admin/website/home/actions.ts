@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -94,7 +95,7 @@ const Section = z.object({
 // ============================================================
 // First open: save the default layout so it can be edited
 // ============================================================
-export async function initPageLayout(pageInput: SitePage) {
+async function initPageLayout__impl(pageInput: SitePage) {
   const page = PageEnum.parse(pageInput);
   const supabase = await requireUser();
   const { count, error } = await supabase
@@ -132,7 +133,7 @@ export async function initPageLayout(pageInput: SitePage) {
 // ============================================================
 // CRUD
 // ============================================================
-export async function addSection(kind: SectionKind, pageInput: SitePage) {
+async function addSection__impl(kind: SectionKind, pageInput: SitePage) {
   const k = z.enum(KINDS.map((x) => x.kind) as [SectionKind, ...SectionKind[]]).parse(kind);
   const page = PageEnum.parse(pageInput);
   const supabase = await requireUser();
@@ -148,7 +149,7 @@ export async function addSection(kind: SectionKind, pageInput: SitePage) {
   return { id: data.id as string };
 }
 
-export async function saveSection(input: unknown) {
+async function saveSection__impl(input: unknown) {
   const { id, kind: _kind, ...row } = Section.parse(input);
   void _kind; // a section's kind never changes
   const supabase = await requireUser();
@@ -157,7 +158,7 @@ export async function saveSection(input: unknown) {
   revalidate();
 }
 
-export async function deleteSection(id: string) {
+async function deleteSection__impl(id: string) {
   const sid = z.string().uuid().parse(id);
   const supabase = await requireUser();
   const { error } = await supabase.from("home_sections").delete().eq("id", sid);
@@ -165,7 +166,7 @@ export async function deleteSection(id: string) {
   revalidate();
 }
 
-export async function setSectionVisible(id: string, visible: boolean) {
+async function setSectionVisible__impl(id: string, visible: boolean) {
   const sid = z.string().uuid().parse(id);
   const supabase = await requireUser();
   const { error } = await supabase.from("home_sections").update({ is_visible: !!visible }).eq("id", sid);
@@ -173,7 +174,7 @@ export async function setSectionVisible(id: string, visible: boolean) {
   revalidate();
 }
 
-export async function reorderSections(ids: string[]) {
+async function reorderSections__impl(ids: string[]) {
   const list = z.array(z.string().uuid()).max(100).parse(ids);
   const supabase = await requireUser();
   for (let i = 0; i < list.length; i++) {
@@ -184,7 +185,7 @@ export async function reorderSections(ids: string[]) {
 }
 
 /** Copy a section (all its content and settings) right below the original. */
-export async function duplicateSection(id: string) {
+async function duplicateSection__impl(id: string) {
   const sid = z.string().uuid().parse(id);
   const supabase = await requireUser();
   const { data: src, error } = await supabase
@@ -206,9 +207,19 @@ export async function duplicateSection(id: string) {
   return { id: copy.id as string };
 }
 
-export async function uploadSectionImage(fd: FormData): Promise<{ url: string }> {
+async function uploadSectionImage__impl(fd: FormData): Promise<{ url: string }> {
   await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
   return uploadPublicImage("banners", file);
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function initPageLayout(...args: Parameters<typeof initPageLayout__impl>) { return toResult(() => initPageLayout__impl(...args)); }
+export async function addSection(...args: Parameters<typeof addSection__impl>) { return toResult(() => addSection__impl(...args)); }
+export async function saveSection(...args: Parameters<typeof saveSection__impl>) { return toResult(() => saveSection__impl(...args)); }
+export async function deleteSection(...args: Parameters<typeof deleteSection__impl>) { return toResult(() => deleteSection__impl(...args)); }
+export async function setSectionVisible(...args: Parameters<typeof setSectionVisible__impl>) { return toResult(() => setSectionVisible__impl(...args)); }
+export async function reorderSections(...args: Parameters<typeof reorderSections__impl>) { return toResult(() => reorderSections__impl(...args)); }
+export async function duplicateSection(...args: Parameters<typeof duplicateSection__impl>) { return toResult(() => duplicateSection__impl(...args)); }
+export async function uploadSectionImage(...args: Parameters<typeof uploadSectionImage__impl>) { return toResult(() => uploadSectionImage__impl(...args)); }

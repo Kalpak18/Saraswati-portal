@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
@@ -14,7 +15,12 @@ import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
-import { saveStudent, deleteStudent, importStudents } from "./actions";
+import { saveStudent as saveStudentAction, deleteStudent as deleteStudentAction, importStudents as importStudentsAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveStudent = clientAction(saveStudentAction);
+const deleteStudent = clientAction(deleteStudentAction);
+const importStudents = clientAction(importStudentsAction);
 
 type Std = { id: string; name: string; academic_year: string };
 type Div = { id: string; standard_id: string; name: string };

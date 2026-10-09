@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -16,8 +17,16 @@ import { Modal } from "@/components/ui/Modal";
 import { PAGES, kindSpec, kindsForPage, pick, type HomeSection, type SectionKind, type SitePage } from "@/lib/homeSections";
 import { cn } from "@/lib/utils";
 import { moveItem, useDragSort } from "@/components/ui/useDragSort";
-import { addSection, deleteSection, duplicateSection, initPageLayout, reorderSections, setSectionVisible } from "./actions";
+import { addSection as addSectionAction, deleteSection as deleteSectionAction, duplicateSection as duplicateSectionAction, initPageLayout as initPageLayoutAction, reorderSections as reorderSectionsAction, setSectionVisible as setSectionVisibleAction } from "./actions";
 import SectionEditor from "./SectionEditor";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const addSection = clientAction(addSectionAction);
+const deleteSection = clientAction(deleteSectionAction);
+const duplicateSection = clientAction(duplicateSectionAction);
+const initPageLayout = clientAction(initPageLayoutAction);
+const reorderSections = clientAction(reorderSectionsAction);
+const setSectionVisible = clientAction(setSectionVisibleAction);
 
 export default function HomeBuilderClient({
   page, sections, saved, exams,

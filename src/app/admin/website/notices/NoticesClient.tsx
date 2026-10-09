@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useTransition } from "react";
@@ -18,7 +19,13 @@ import { Modal, ModalActions } from "@/components/ui/Modal";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
 import { NOTICE_CATEGORIES, noticeCategory } from "@/lib/notices";
 import { cn } from "@/lib/utils";
-import { saveNotice, deleteNotice, setNoticeFlags, startNoticeUpload } from "./actions";
+import { saveNotice as saveNoticeAction, deleteNotice as deleteNoticeAction, setNoticeFlags as setNoticeFlagsAction, startNoticeUpload as startNoticeUploadAction } from "./actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveNotice = clientAction(saveNoticeAction);
+const deleteNotice = clientAction(deleteNoticeAction);
+const setNoticeFlags = clientAction(setNoticeFlagsAction);
+const startNoticeUpload = clientAction(startNoticeUploadAction);
 
 export type AdminNotice = {
   id: string;

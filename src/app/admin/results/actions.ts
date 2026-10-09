@@ -1,5 +1,6 @@
 "use server";
 
+import { toResult } from "@/lib/actionResult";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -61,7 +62,7 @@ const SaveBatchPayload = z.object({
 // ============================================================
 // Idempotency probe — call BEFORE showing preview so we can warn admin
 // ============================================================
-export async function checkUploadIdempotency(key: string) {
+async function checkUploadIdempotency__impl(key: string) {
   const supabase = await createSupabaseServer();
   const { data } = await supabase
     .from("upload_batches")
@@ -83,7 +84,7 @@ const ProbeExamSchema = z.object({
   existing_student_ids: z.array(z.string().uuid()),  // students already picked as "existing"
 });
 
-export async function probeExamConflicts(input: unknown) {
+async function probeExamConflicts__impl(input: unknown) {
   const p = ProbeExamSchema.parse(input);
   const supabase = await createSupabaseServer();
 
@@ -115,7 +116,7 @@ export async function probeExamConflicts(input: unknown) {
 // ============================================================
 // Save one or more exams as a single transactional batch
 // ============================================================
-export async function saveBatch(input: unknown) {
+async function saveBatch__impl(input: unknown) {
   const p = SaveBatchPayload.parse(input);
   const supabase = await createSupabaseServer();
 
@@ -370,7 +371,7 @@ const UpdatePayload = z.object({
   })),
 });
 
-export async function updateStudentMarks(input: unknown) {
+async function updateStudentMarks__impl(input: unknown) {
   const p = UpdatePayload.parse(input);
   const supabase = await createSupabaseServer();
   const { data: user } = await supabase.auth.getUser();
@@ -389,3 +390,9 @@ export async function updateStudentMarks(input: unknown) {
   revalidatePath(`/admin/results/${p.exam_id}`);
   revalidatePath(`/admin/results/${p.exam_id}/${p.student_id}`);
 }
+
+// ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
+export async function checkUploadIdempotency(...args: Parameters<typeof checkUploadIdempotency__impl>) { return toResult(() => checkUploadIdempotency__impl(...args)); }
+export async function probeExamConflicts(...args: Parameters<typeof probeExamConflicts__impl>) { return toResult(() => probeExamConflicts__impl(...args)); }
+export async function saveBatch(...args: Parameters<typeof saveBatch__impl>) { return toResult(() => saveBatch__impl(...args)); }
+export async function updateStudentMarks(...args: Parameters<typeof updateStudentMarks__impl>) { return toResult(() => updateStudentMarks__impl(...args)); }

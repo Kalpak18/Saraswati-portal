@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
@@ -13,7 +14,12 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { resizeImage } from "@/components/ui/ImageUpload";
 import { ImageEditor } from "@/components/ui/ImageEditor";
 import { cn } from "@/lib/utils";
-import { saveEvent, deleteEvent, uploadEventImage } from "../actions";
+import { saveEvent as saveEventAction, deleteEvent as deleteEventAction, uploadEventImage as uploadEventImageAction } from "../actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveEvent = clientAction(saveEventAction);
+const deleteEvent = clientAction(deleteEventAction);
+const uploadEventImage = clientAction(uploadEventImageAction);
 
 type Photo = { photo_url: string; caption: string | null };
 type EventForm = {

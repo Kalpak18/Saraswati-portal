@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +13,12 @@ import { createSupabaseBrowser } from "@/lib/supabase/browser";
 import { parseResultsWorkbook, type ParsedFile, type ParsedStudentBlock } from "@/lib/excel/parseResults";
 import { matchStudent, type Candidate, type MatchResult } from "@/lib/match/nameMatch";
 import { normalizeDivision, displayDivision } from "@/lib/i18n/normalize";
-import { saveBatch, checkUploadIdempotency, probeExamConflicts } from "../actions";
+import { saveBatch as saveBatchAction, checkUploadIdempotency as checkUploadIdempotencyAction, probeExamConflicts as probeExamConflictsAction } from "../actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveBatch = clientAction(saveBatchAction);
+const checkUploadIdempotency = clientAction(checkUploadIdempotencyAction);
+const probeExamConflicts = clientAction(probeExamConflictsAction);
 
 type Std = { id: string; name: string; academic_year: string };
 type Div = { id: string; standard_id: string; name: string };

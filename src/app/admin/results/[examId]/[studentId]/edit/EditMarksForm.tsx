@@ -1,11 +1,15 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { updateStudentMarks } from "../../../actions";
+import { updateStudentMarks as updateStudentMarksAction } from "../../../actions";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const updateStudentMarks = clientAction(updateStudentMarksAction);
 
 type Row = {
   subject_id: string;
