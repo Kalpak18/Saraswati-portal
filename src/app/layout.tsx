@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Inter, Fraunces, Noto_Sans_Devanagari, Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
@@ -7,7 +7,10 @@ import { Toaster } from "sonner";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import { getSchoolInfo } from "@/lib/school";
-import { themeCss } from "@/lib/theme";
+import { BRAND_PRESETS, themeCss } from "@/lib/theme";
+import { createSupabaseServer } from "@/lib/supabase/server";
+import { slidesFromRow } from "@/lib/hero";
+import { siteUrl } from "@/lib/siteUrl";
 
 // -----------------------------------------------------------------------------
 // Type system
@@ -50,21 +53,42 @@ const devanagari = Noto_Sans_Devanagari({
   variable: "--font-devanagari",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Saraswati School",
-    template: "%s · Saraswati School",
-  },
-  description: "A modern school portal — results, events, achievements and more.",
-  applicationName: "Saraswati School",
-  formatDetection: { telephone: false },
-};
+// Titles and link previews (WhatsApp, Facebook…) use the school's own name,
+// logo and first hero photo from the admin, so nothing is hard-coded.
+export async function generateMetadata(): Promise<Metadata> {
+  const school = await getSchoolInfo();
+  const name = school.name || "Saraswati Vidyalaya, Vasind";
+  const supabase = await createSupabaseServer();
+  const { data: hero } = await supabase.from("hero_content").select("*").limit(1).maybeSingle();
+  const cover = slidesFromRow(hero).find((s) => s.type === "photo")?.url ?? slidesFromRow(hero)[0]?.poster_url ?? null;
+  const image = cover ?? school.logo_url ?? undefined;
+  const description = `${name} — ${school.address}. Results, notices, events and achievements.`;
+  return {
+    metadataBase: siteUrl(),
+    title: { default: name, template: `%s · ${name}` },
+    description,
+    applicationName: name,
+    formatDetection: { telephone: false },
+    icons: school.logo_url ? { icon: school.logo_url, apple: school.logo_url } : undefined,
+    openGraph: {
+      type: "website",
+      siteName: name,
+      title: name,
+      description,
+      locale: "en_IN",
+      alternateLocale: ["mr_IN"],
+      images: image ? [{ url: image }] : undefined,
+    },
+    twitter: { card: image ? "summary_large_image" : "summary", title: name, description, images: image ? [image] : undefined },
+  };
+}
 
-export const viewport = {
-  themeColor: "#0f766e", // teal-700 — matches the primary in globals.css
-  width: "device-width",
-  initialScale: 1,
-};
+// The browser's address-bar colour follows the brand colour from Appearance.
+export async function generateViewport(): Promise<Viewport> {
+  const { theme } = await getSchoolInfo();
+  const brand = BRAND_PRESETS.find((b) => b.key === theme.brand) ?? BRAND_PRESETS[0];
+  return { themeColor: brand.scale["700"], width: "device-width", initialScale: 1 };
+}
 
 export default async function RootLayout(props: LayoutProps<"/">) {
   // The saved appearance (brand colour, font, corners) as CSS variables.

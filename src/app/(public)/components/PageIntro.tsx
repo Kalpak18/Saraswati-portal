@@ -13,7 +13,7 @@ export function PageIntro({
   subtitle?: ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-ink-100 bg-linear-to-b from-brand-50/60 via-white to-white">
+    <section className="relative isolate overflow-hidden border-b border-ink-100 bg-linear-to-b from-brand-50/60 via-white to-white">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -right-24 top-4 h-72 w-72 rounded-full bg-brand-100/40 blur-3xl" />
         <div className="absolute -left-24 bottom-0 h-72 w-72 rounded-full bg-accent-100/50 blur-3xl" />

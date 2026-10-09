@@ -24,7 +24,7 @@ export default function HomeToppers({ toppers, s }: { toppers: PublicTopper[]; s
   if (!g) return null;
 
   return (
-    <section className="relative overflow-hidden bg-linear-to-b from-white to-brand-50/50 sec">
+    <section className="relative isolate overflow-hidden bg-linear-to-b from-white to-brand-50/50 sec">
       <div className="sec-backdrop pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
         <div className="absolute -left-24 top-20 h-64 w-64 rounded-full bg-brand-100/50 blur-3xl" />
         <div className="absolute -right-24 bottom-20 h-64 w-64 rounded-full bg-accent-100/60 blur-3xl" />

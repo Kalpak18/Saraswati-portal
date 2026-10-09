@@ -29,7 +29,7 @@ Everything needed to put this portal online and keep it running for a school.
 
 ## 2. Deploy
 
-1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings.
+1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`, `supabase/launch.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings; `launch.sql` Appearance, team details (and hides teachers' private contacts from the public API) and Downloads.
 2. **Push to GitHub**, then Vercel → *Add New Project* → import the repo.
 3. **Set environment variables** in Vercel (*Settings → Environment Variables*), for Production **and** Preview:
 
@@ -38,13 +38,15 @@ Everything needed to put this portal online and keep it running for a school.
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key |
    | `SUPABASE_SERVICE_ROLE_KEY` | service_role secret — **never** prefix with `NEXT_PUBLIC_` |
-   | `IP_HASH_SALT` | any long random string (`openssl rand -hex 32`) |
+   | `IP_HASH_SALT` | **required** — a long random string (`openssl rand -hex 32`). The site refuses to start in production without it. Use a different value from your laptop's. |
+   | `NEXT_PUBLIC_SITE_URL` | the public address, e.g. `https://saraswatividyalaya.in` — used for the sitemap and WhatsApp/Facebook link previews |
    | `LOOKUP_RATE_LIMIT` | `30` (optional; lookups per IP per window) |
    | `LOOKUP_RATE_WINDOW_SECONDS` | `600` (optional) |
    | `NEXT_PUBLIC_SENTRY_DSN` | your Sentry DSN (already in `.env.local`) |
    | `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | optional — only for readable stack traces, see §7 |
 
 4. **Deploy**, then add your custom domain in Vercel and follow its DNS instructions.
+4a. **Point Supabase auth at the live site.** Supabase → Authentication → URL Configuration: set *Site URL* to your domain and add `https://<your-domain>/auth/callback` to *Redirect URLs*. Without this, password-reset emails link back to localhost.
 5. **Rotate the admin password** from inside Supabase → Authentication → Users. The current one was set during development and is sitting in a chat transcript.
 6. **Smoke test on the live URL**: parent lookup with a real mobile + DOB, one report card, admin login, one Excel upload.
 
@@ -59,6 +61,11 @@ Everything needed to put this portal online and keep it running for a school.
 - **Environment validation** — `src/lib/env.ts` fails at boot with a readable list of what's missing, instead of a cryptic error mid-request.
 - **Security headers** — HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer and permissions policy. `/lookup/*` and `/admin/*` are `private, no-store` so no shared proxy ever caches one child's report card and serves it to another parent. `X-Powered-By` removed.
 - **Audit retention** — `prune_audit_log()` drops entries older than two years.
+- **Readable errors in production.** React hides messages thrown by server actions in production ("Minified React error #441"). Every action returns `{ ok, error }` through `src/lib/actionResult.ts`, so parents and admins see the real reason.
+- **Uploads are admin-only.** Every upload action checks the session before using the service-role key; the logo accepts raster images only (no SVG). Large files (videos, PDFs, documents) go browser → Storage through one-time signed URLs.
+- **Contact form spam protection** — a hidden honeypot field plus a limit of 3 messages per hashed IP per 10 minutes.
+- **Private data stays private.** Teachers' email/phone are served only through the `team_public` view, and only when "show on website" is ticked; the table itself is closed to the public API. Report cards, admin and login pages are `noindex` and disallowed in `robots.txt`.
+- **SEO** — `sitemap.xml` (pages + every event), `robots.txt`, titles/descriptions/link previews built from the school's name, logo and hero photo.
 
 ---
 
@@ -225,3 +232,27 @@ Two related hardenings in the same file:
 ### If someone does get stuck
 
 Clearing site data in the browser always recovers it — it discards the dead refresh token and forces a fresh login. Worth knowing before debugging anything else.
+
+---
+
+## Launch checklist
+
+Content (Admin):
+- [ ] Settings: phone, email, office hours, logo, Marathi name — check the footer and Contact page.
+- [ ] Settings → Appearance: pick the brand colour / font / corners.
+- [ ] Home hero: real school photos or video (no test images).
+- [ ] Home page sections: replace any test photos/captions; remove links to pages that don't exist (the editor flags them in red).
+- [ ] Testimonials: replace the sample quotes with real ones before switching that section on — or leave it hidden.
+- [ ] Post at least one notice, one event with photos, and the team (Faculty page).
+- [ ] Upload the academic calendar / admission form to Downloads.
+- [ ] Import one competitive-exam result sheet and "Find toppers" for the latest exam.
+
+Technical:
+- [ ] All migrations in §2 applied (the admin pages show an amber box if one is missing).
+- [ ] `IP_HASH_SALT` and `NEXT_PUBLIC_SITE_URL` set on the host.
+- [ ] Supabase auth Site URL / redirect set to the live domain.
+- [ ] Admin password rotated; only staff who need it have accounts.
+- [ ] Open the live site on a phone: hero, menu, Marathi toggle, Check Result with a real student.
+- [ ] Send a test message from the Contact page and find it in Admin → Website → Contact inbox.
+- [ ] Share the home page link on WhatsApp and check the preview shows the school name and photo.
+

@@ -162,7 +162,7 @@ function EventChapter({ e, flip, lang, frame }: { e: HomeEvent; flip: boolean; l
             className="group mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-900"
           >
             {e.photos.length > 0
-              ? (lang === "mr" ? `सर्व ${e.photos.length} फोटो पहा` : `View all ${e.photos.length} photos`)
+              ? (lang === "mr" ? `सर्व ${e.photos.length} फोटो पहा` : e.photos.length === 1 ? "View the photo" : `View all ${e.photos.length} photos`)
               : (lang === "mr" ? "अधिक वाचा" : "Read more")}
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </Link>
@@ -193,7 +193,7 @@ function EventCard({ e, lang, frame }: { e: HomeEvent; lang: "mr" | "en"; frame:
         {e.description && <p className="mt-1.5 line-clamp-2 text-sm text-ink-600">{e.description}</p>}
         {e.photos.length > 0 && (
           <span className="mt-auto pt-3 text-xs font-medium text-ink-500">
-            {lang === "mr" ? `${e.photos.length} फोटो` : `${e.photos.length} photos`}
+            {lang === "mr" ? `${e.photos.length} फोटो` : `${e.photos.length} photo${e.photos.length === 1 ? "" : "s"}`}
           </span>
         )}
       </div>

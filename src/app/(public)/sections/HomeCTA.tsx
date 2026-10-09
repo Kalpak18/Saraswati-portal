@@ -23,7 +23,7 @@ export default function HomeCTA({
   if (!title && !body) return null;
 
   return (
-    <section className="relative overflow-hidden sec">
+    <section className="relative isolate overflow-hidden sec">
       {/* Backdrop */}
       <div className="sec-backdrop absolute inset-0 -z-10 bg-linear-to-br from-brand-800 via-brand-900 to-ink-900" />
       <div className="sec-backdrop absolute inset-0 -z-10 opacity-30"

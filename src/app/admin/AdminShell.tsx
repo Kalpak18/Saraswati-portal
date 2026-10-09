@@ -29,8 +29,13 @@ export default function AdminShell({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  // Close mobile sidebar on route change.
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  // Close mobile sidebar on route change (reset during render, not in an
+  // effect, so the closed state lands in the same render).
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setMobileOpen(false);
+  }
   // Close user menu on any click outside.
   useEffect(() => {
     if (!userMenuOpen) return;

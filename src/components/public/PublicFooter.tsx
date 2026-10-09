@@ -41,7 +41,7 @@ export function PublicFooter({
   ];
 
   return (
-    <footer className="mt-24 bg-linear-to-b from-ink-900 to-brand-950 text-ink-200">
+    <footer className="bg-linear-to-b from-ink-900 to-brand-950 text-ink-200">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           {/* Brand + tagline */}

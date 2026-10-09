@@ -3,6 +3,9 @@ import Link from "next/link";
 import ResetPasswordForm from "./ResetPasswordForm";
 import { createSupabaseServer } from "@/lib/supabase/server";
 
+// Private page: keep it out of search engines (robots.txt also disallows it).
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function ResetPasswordPage() {
   const supabase = await createSupabaseServer();
 

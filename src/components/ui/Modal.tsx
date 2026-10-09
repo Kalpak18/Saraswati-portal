@@ -105,7 +105,6 @@ export function Modal({
     };
     // `open` is the only trigger. `onClose` is read via ref (see above), so
     // parents can pass inline arrows without stealing focus from inputs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (!open || typeof document === "undefined") return null;

@@ -3,6 +3,9 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 import AdminShell from "./AdminShell";
 import { getSchoolInfo } from "@/lib/school";
 
+// Private page: keep it out of search engines (robots.txt also disallows it).
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function AdminLayout(props: LayoutProps<"/admin">) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();

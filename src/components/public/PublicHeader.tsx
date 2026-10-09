@@ -49,8 +49,13 @@ export function PublicHeader({
     };
   }, [isHome]);
 
-  useEffect(() => setDrawer(false), [pathname]);
-  useEffect(() => setAcademicsOpen(false), [pathname]);
+  // Close menus on navigation — reset during render, not in an effect.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setDrawer(false);
+    setAcademicsOpen(false);
+  }
 
   // Click-outside for academics dropdown.
   useEffect(() => {

@@ -326,7 +326,9 @@ export default function HomeHero({
 
       {/* Scroll cue */}
       {/* pointer-events-none: this full-width strip sits over the dots and used to swallow their clicks. */}
-      <div className={cn("pointer-events-none absolute inset-x-0 bottom-6 justify-center", compact ? "hidden" : "flex")} style={{ opacity: "calc(1 - var(--p, 0) * 4)" }} aria-hidden="true">
+      <div className={cn("pointer-events-none absolute inset-x-0 bottom-6 justify-center",
+        // On phones the slide controls take the bottom row; the hint would collide.
+        compact ? "hidden" : multi ? "hidden sm:flex" : "flex")} style={{ opacity: "calc(1 - var(--p, 0) * 4)" }} aria-hidden="true">
         <div className="flex flex-col items-center gap-1 text-[10px] font-medium uppercase tracking-[0.3em] text-white/70">
           {t("खाली सरकवा", "Scroll")}
           <ChevronDown className="h-5 w-5 animate-bounce" />
