@@ -14,6 +14,7 @@ import { parseResultsWorkbook, type ParsedFile, type ParsedStudentBlock } from "
 import { matchStudent, type Candidate, type MatchResult } from "@/lib/match/nameMatch";
 import { normalizeDivision, displayDivision } from "@/lib/i18n/normalize";
 import { saveBatch as saveBatchAction, checkUploadIdempotency as checkUploadIdempotencyAction, probeExamConflicts as probeExamConflictsAction } from "../actions";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 // Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
 const saveBatch = clientAction(saveBatchAction);
@@ -122,15 +123,17 @@ export default function UploadWizard({
 
       const priorBatch = await checkUploadIdempotency(key);
 
-      const { data: rosterRows, error } = await supabase
-        .from("students")
-        .select("id, roll_no, student_name, division_id")
-        .in("division_id", divs.map((d) => d.id));
-      if (error) { toast.error(error.message); setBusy(false); return; }
+      let rosterRows: { id: string; roll_no: number; student_name: string; division_id: string }[];
+      try {
+        rosterRows = await selectAll((from, to) =>
+          supabase.from("students").select("id, roll_no, student_name, division_id")
+            .in("division_id", divs.map((d) => d.id)).order("id").range(from, to),
+        );
+      } catch (err) { toast.error((err as Error).message); setBusy(false); return; }
 
       const rostersByDivision: Record<string, Candidate[]> = {};
       for (const d of divs) rostersByDivision[d.id] = [];
-      for (const r of rosterRows ?? []) {
+      for (const r of rosterRows) {
         rostersByDivision[r.division_id]?.push({ id: r.id, roll_no: r.roll_no, name: r.student_name });
       }
 

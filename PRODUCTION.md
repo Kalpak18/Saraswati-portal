@@ -29,7 +29,7 @@ Everything needed to put this portal online and keep it running for a school.
 
 ## 2. Deploy
 
-1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`, `supabase/launch.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings; `launch.sql` Appearance, team details (and hides teachers' private contacts from the public API) and Downloads.
+1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`, `supabase/launch.sql`, `supabase/scale.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings; `launch.sql` Appearance, team details (and hides teachers' private contacts from the public API) and Downloads; `scale.sql` the indexes, rate limiting and audit sizing for a full school (~5000 students).
 2. **Push to GitHub**, then Vercel → *Add New Project* → import the repo.
 3. **Set environment variables** in Vercel (*Settings → Environment Variables*), for Production **and** Preview:
 
@@ -40,8 +40,9 @@ Everything needed to put this portal online and keep it running for a school.
    | `SUPABASE_SERVICE_ROLE_KEY` | service_role secret — **never** prefix with `NEXT_PUBLIC_` |
    | `IP_HASH_SALT` | **required** — a long random string (`openssl rand -hex 32`). The site refuses to start in production without it. Use a different value from your laptop's. |
    | `NEXT_PUBLIC_SITE_URL` | the public address, e.g. `https://saraswatividyalaya.in` — used for the sitemap and WhatsApp/Facebook link previews |
-   | `LOOKUP_RATE_LIMIT` | `30` (optional; lookups per IP per window) |
+   | `LOOKUP_RATE_LIMIT` | `300` (optional; lookups per network/IP per window) |
    | `LOOKUP_RATE_WINDOW_SECONDS` | `600` (optional) |
+   | `LOOKUP_MOBILE_LIMIT` | `20` (optional; lookups per mobile number per 24 h) |
    | `NEXT_PUBLIC_SENTRY_DSN` | your Sentry DSN (already in `.env.local`) |
    | `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | optional — only for readable stack traces, see §7 |
 
@@ -102,11 +103,13 @@ where parent_mobile_norm = '9822014571' and dob = '2010-05-13';
    - Sign links with a short-lived token (~30 min) — a few hours of work.
    - Require re-entering DOB on the card page.
 
-**2. Shared IPs and the rate limit.** 30 lookups per 10 minutes per IP. Parents on the same school WiFi or a carrier NAT share an IP, so a crowd at a school event could trip it. Raise `LOOKUP_RATE_LIMIT` to 100+ if that happens.
+**2. Shared IPs and the rate limit.** Two budgets: 300 lookups per 10 minutes per network (parents on school Wi-Fi or a Jio/Airtel NAT share an IP), and 20 per mobile number per day from any network — that second one is what stops someone guessing a child's date of birth. Load-tested at ~220 lookups/second with no errors.
 
 **3. Excel upload on serverless.** Parsing happens in-process. Vercel's limits (4.5 MB request body; 60s execution on Pro) are fine for class-sized files but will fail on a very large workbook. If uploads grow, move parsing to a background job.
 
-**4. No automated tests.** There is no test suite. The mark-parsing and name-matching logic in `src/lib/excel` and `src/lib/match` is where a silent bug would be most costly — a wrong mark on a report card. Worth covering before the portal handles a full school's results.
+**4. Tests.** `npm run check:imports` runs every Excel template through the importers with real-world data (60 checks). Name matching in `src/lib/match` is not covered yet.
+
+**5. Database size.** A full school writes ~1M mark rows a year (~300–400 MB with indexes). The Supabase free plan stops at 500 MB, so move to Pro (8 GB) before the first full year of results.
 
 **5. One admin account.** No roles, no per-teacher logins, no way to see who changed a mark beyond `audit_log.actor_id`. Fine for one clerk; revisit if teachers get access.
 

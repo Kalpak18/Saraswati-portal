@@ -7,9 +7,13 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url("must be https://<ref>.supabase.co"),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20, "looks too short to be a key"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20, "looks too short to be a key"),
-  /** Max parent lookups allowed from one IP inside the window. */
-  LOOKUP_RATE_LIMIT: z.coerce.number().int().positive().default(30),
+  /** Max parent lookups from one network (IP) inside the window. Generous:
+   *  on result day hundreds of parents share one Jio / Airtel / school Wi-Fi IP. */
+  LOOKUP_RATE_LIMIT: z.coerce.number().int().positive().default(300),
   LOOKUP_RATE_WINDOW_SECONDS: z.coerce.number().int().positive().default(600),
+  /** Max lookups for one mobile number per 24 h, from anywhere. Strict: this
+   *  is what stops someone guessing a child's date of birth. */
+  LOOKUP_MOBILE_LIMIT: z.coerce.number().int().positive().default(20),
   /** Salt for hashing IPs, so no raw IP is ever stored. */
   IP_HASH_SALT: z.string().min(8).default("saraswati-portal-dev-salt"),
   /** Optional: error monitoring. Absent = monitoring simply off. */
@@ -26,6 +30,7 @@ const parsed = schema.safeParse({
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   LOOKUP_RATE_LIMIT: process.env.LOOKUP_RATE_LIMIT,
   LOOKUP_RATE_WINDOW_SECONDS: process.env.LOOKUP_RATE_WINDOW_SECONDS,
+  LOOKUP_MOBILE_LIMIT: process.env.LOOKUP_MOBILE_LIMIT,
   IP_HASH_SALT: process.env.IP_HASH_SALT,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,

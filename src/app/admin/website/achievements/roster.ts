@@ -1,5 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { normalizeStandard, normalizeDivision } from "@/lib/i18n/normalize";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 // Minimal roster sent to the browser for name matching — no mobiles/DOBs.
 export type RosterStudent = {
@@ -15,13 +16,16 @@ export type RosterStudent = {
 
 export async function loadRoster(): Promise<RosterStudent[]> {
   const supabase = await createSupabaseServer();
-  const { data, error } = await supabase
-    .from("students")
-    .select("id, student_name, roll_no, divisions(name, standards(name, academic_year))")
-    .eq("is_active", true)
-    .order("student_name");
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((s) => {
+  // The whole school (~5000 students) — fetched page by page.
+  const data = await selectAll((from, to) =>
+    supabase
+      .from("students")
+      .select("id, student_name, roll_no, divisions(name, standards(name, academic_year))")
+      .eq("is_active", true)
+      .order("student_name").order("id")
+      .range(from, to),
+  );
+  return data.map((s) => {
     const div = s.divisions as unknown as {
       name: string; standards: { name: string; academic_year: string } | null;
     } | null;

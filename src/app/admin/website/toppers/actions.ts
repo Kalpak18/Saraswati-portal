@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { uploadPublicImage } from "@/lib/storage";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 async function requireUser() {
   const supabase = await createSupabaseServer();
@@ -34,16 +35,20 @@ async function generateToppers__impl(input: unknown) {
   const p = GeneratePayload.parse(input);
   const supabase = await requireUser();
 
-  const [{ data: exams, error: eErr }, { data: subjects, error: sErr }, { data: marks, error: mErr }] =
+  const [{ data: exams, error: eErr }, { data: subjects, error: sErr }, marks] =
     await Promise.all([
       supabase
         .from("exams")
         .select("id, test_type, academic_year, divisions(name, standards(name))")
         .in("id", p.exam_ids),
       supabase.from("exam_subjects").select("id, exam_id, max_marks").in("exam_id", p.exam_ids),
-      supabase.from("marks").select("exam_id, student_id, subject_id, marks_obtained").in("exam_id", p.exam_ids),
+      // A whole standard is ~6 divisions × 80 students × 12 papers — well past one page.
+      selectAll<{ exam_id: string; student_id: string; subject_id: string; marks_obtained: number | null }>((from, to) =>
+        supabase.from("marks").select("exam_id, student_id, subject_id, marks_obtained")
+          .in("exam_id", p.exam_ids).order("id").range(from, to),
+      ),
     ]);
-  if (eErr || sErr || mErr) throw new Error((eErr ?? sErr ?? mErr)!.message);
+  if (eErr || sErr) throw new Error((eErr ?? sErr)!.message);
   if (!exams || exams.length === 0) throw new Error("Exam not found");
 
   const maxBySubject = new Map((subjects ?? []).map((s) => [s.id, s.max_marks as number | null]));
@@ -53,7 +58,7 @@ async function generateToppers__impl(input: unknown) {
   // helps nor hurts the percentage.
   type Tot = { exam_id: string; student_id: string; total: number; max: number; hasMax: boolean };
   const totals = new Map<string, Tot>();
-  for (const m of marks ?? []) {
+  for (const m of marks) {
     if (m.marks_obtained == null) continue;
     const k = `${m.exam_id}|${m.student_id}`;
     const t = totals.get(k) ?? { exam_id: m.exam_id, student_id: m.student_id, total: 0, max: 0, hasMax: true };
