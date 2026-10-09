@@ -1,9 +1,9 @@
 "use client";
 
 import { clientAction } from "@/lib/clientAction";
+import { parseStudentsWorkbook, type StudentImport } from "@/lib/excel/parseStudents";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { Pencil, Trash2, Upload, Users, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -155,56 +155,29 @@ export default function StudentsClient({
     });
   }
 
-  function excelDateToISO(v: unknown): string {
-    if (v == null || v === "") return "";
-    if (typeof v === "string") {
-      const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-      const m2 = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-      if (m2) return `${m2[3]}-${m2[2].padStart(2, "0")}-${m2[1].padStart(2, "0")}`;
-      return v;
-    }
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    if (typeof v === "number") {
-      const d = XLSX.SSF.parse_date_code(v);
-      if (!d) return "";
-      return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
-    }
-    return String(v);
-  }
+  // Parsed roster waiting for the admin to confirm (see the import modal).
+  const [review, setReview] = useState<(StudentImport & { fileName: string }) | null>(null);
 
   async function handleFile(file: File) {
     if (!selectedDivisionId) { toast.error("Select a division first"); return; }
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { cellDates: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
+    try {
+      const parsed = parseStudentsWorkbook(await file.arrayBuffer());
+      setReview({ ...parsed, fileName: file.name });
+    } catch (err) {
+      toast.error(`Couldn't read this file: ${(err as Error).message}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
-    const cleaned: unknown[] = [];
-    const errors: string[] = [];
-    rows.forEach((r, i) => {
-      const roll = Number(r.roll_no ?? r["Roll No"] ?? r["roll no"]);
-      const name = String(r.student_name ?? r["Student Name"] ?? r.name ?? "").trim();
-      const mobile = String(r.parent_mobile ?? r["Parent Mobile"] ?? r.mobile ?? "").trim();
-      const dob = excelDateToISO(r.dob ?? r["DOB"] ?? r["Date of Birth"]);
-      const gender = String(r.gender ?? r["Gender"] ?? "").trim();
-      if (!roll || !name || !mobile || !dob) {
-        errors.push(`Row ${i + 2}: missing required fields`);
-        return;
-      }
-      cleaned.push({
-        roll_no: roll, student_name: name, parent_mobile: mobile, dob,
-        gender: gender || null,
-      });
-    });
-
-    if (cleaned.length === 0) { toast.error(errors[0] || "No valid rows found"); return; }
-
+  function confirmImport() {
+    if (!review || !selectedDivisionId) return;
+    const rows = review.rows.map(({ row: _r, ...rest }) => { void _r; return rest; });
     startTransition(async () => {
       try {
-        const { inserted } = await importStudents(selectedDivisionId, cleaned);
+        const { inserted } = await importStudents(selectedDivisionId, rows);
         toast.success(`Imported ${inserted} students`);
-        if (errors.length) toast.warning(`${errors.length} rows skipped — check formatting`);
+        setReview(null);
         setImportOpen(false);
         router.refresh();
       } catch (err) { toast.error((err as Error).message); }
@@ -456,7 +429,7 @@ export default function StudentsClient({
       {/* Import modal */}
       <Modal
         open={importOpen}
-        onClose={() => setImportOpen(false)}
+        onClose={() => { setReview(null); setImportOpen(false); }}
         title="Import students from Excel"
         size="lg"
       >
@@ -472,20 +445,60 @@ export default function StudentsClient({
           <p className="text-xs text-ink-500">
             Get a ready-to-fill template at <b>Templates</b> in the sidebar.
           </p>
+          {!review ? (
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 p-6 text-center hover:border-brand-400 hover:bg-brand-50">
-            <Upload className="h-6 w-6 text-ink-400" />
-            <span className="text-sm font-medium text-ink-700">Choose an Excel file</span>
-            <span className="text-xs text-ink-500">.xlsx, .xls, or .csv</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-              className="hidden"
-            />
-          </label>
+              <Upload className="h-6 w-6 text-ink-400" />
+              <span className="text-sm font-medium text-ink-700">Choose an Excel file</span>
+              <span className="text-xs text-ink-500">.xlsx, .xls, or .csv</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                className="hidden"
+              />
+            </label>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                <div className="font-medium text-ink-900">{review.fileName}</div>
+                <div className="mt-1 flex flex-wrap gap-3 text-xs">
+                  <span className="font-semibold text-emerald-700">{review.rows.length} ready to import</span>
+                  {review.errors.length > 0 && <span className="font-semibold text-red-700">{review.errors.length} row{review.errors.length === 1 ? "" : "s"} need fixing</span>}
+                  {review.warnings.length > 0 && <span className="font-semibold text-amber-700">{review.warnings.length} to double-check</span>}
+                </div>
+              </div>
+              {review.errors.length > 0 && (
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                  <div className="mb-1 font-semibold">These rows will be skipped — fix them in Excel and upload again:</div>
+                  <ul className="space-y-0.5">
+                    {review.errors.slice(0, 50).map((e) => <li key={e.row}>Row {e.row}: {e.message}</li>)}
+                    {review.errors.length > 50 && <li>…and {review.errors.length - 50} more</li>}
+                  </ul>
+                </div>
+              )}
+              {review.warnings.length > 0 && (
+                <div className="max-h-32 overflow-y-auto rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <ul className="space-y-0.5">{review.warnings.slice(0, 30).map((w, i) => <li key={i}>⚠ {w}</li>)}</ul>
+                </div>
+              )}
+              {review.rows.length > 0 && (
+                <p className="text-xs text-ink-500">
+                  Students with a roll number already in this division are updated; new roll numbers are added.
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setReview(null); setImportOpen(false); }}>Cancel</Button>
+            {review && (
+              <>
+                <Button variant="ghost" onClick={() => setReview(null)}>Choose another file</Button>
+                <Button onClick={confirmImport} loading={pending} disabled={review.rows.length === 0}>
+                  Import {review.rows.length} student{review.rows.length === 1 ? "" : "s"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Modal>

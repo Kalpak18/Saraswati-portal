@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:imports": "TZ=Asia/Kolkata npx --yes tsx --tsconfig tsconfig.json scripts/check-imports.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.6.0",

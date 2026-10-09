@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { toISODate } from "@/lib/excel/dates";
 import {
   splitLabelValue, isRollLabel, isDivisionLabel, isStandardLabel, isGRLabel,
   normalizeDivision, normalizeStandard, parseNum, toArabicDigits,
@@ -141,35 +142,34 @@ function detectColumns(row: unknown[]): ColMap | null {
 // Cell helpers
 // ============================================================
 function toNumber(v: unknown): number | null {
-  if (v == null || v === "") return null;
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  const s = String(v).trim().replace(/[^\d.\-]/g, "");
-  if (!s) return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
+  return readMark(v).value;
 }
 
-export function toDateISO(v: unknown): string | null {
-  if (v == null || v === "") return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  if (typeof v === "number") {
-    const d = XLSX.SSF.parse_date_code(v);
-    if (!d) return null;
-    return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
-  }
-  const s = toArabicDigits(String(v)).trim();
-  // ISO already
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
-  // dd-mm-yyyy or dd/mm/yyyy
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
-  if (dmy) {
-    let y = dmy[3];
-    if (y.length === 2) y = "20" + y;
-    return `${y}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-  }
-  return null;
+// Absent / not-applicable markers teachers type in a marks cell.
+const ABSENT = /^(ab|abs|absent|a|-+|—|na|n\/a|गैरहजर|ग\.?\s*ह\.?|अनुपस्थित|गैर)$/i;
+
+/**
+ * A marks cell → number, tolerating real-world entry:
+ *   २६ (Marathi digits) · 12½ · 12.5 · "26/40" (marks/max in one cell) ·
+ *   AB / Absent / गैरहजर / "-" (absent → blank).
+ * Anything else that isn't a number is reported, never silently guessed.
+ */
+export function readMark(v: unknown): { value: number | null; max?: number; absent?: boolean; unreadable?: string } {
+  if (v == null || v === "") return { value: null };
+  if (typeof v === "number") return { value: Number.isFinite(v) ? v : null };
+  const raw = String(v).trim();
+  if (!raw) return { value: null };
+  if (ABSENT.test(raw)) return { value: null, absent: true };
+  const s = toArabicDigits(raw).replace(/½/g, ".5").replace(/¼/g, ".25").replace(/¾/g, ".75").replace(/\s+/g, "");
+  const frac = s.match(/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);          // "26/40"
+  if (frac) return { value: Number(frac[1]), max: Number(frac[2]) };
+  const num = s.match(/^-?\d+(?:\.\d+)?/);
+  if (num && /^-?\d+(?:\.\d+)?(marks?|गुण)?$/i.test(s)) return { value: Number(num[0]) };
+  return { value: null, unreadable: raw };
 }
+
+// Dates go through the shared reader (no UTC shift, Indian day-first order).
+export const toDateISO = toISODate;
 
 function isBlankRow(row: unknown[]): boolean {
   return row.every((c) => c == null || String(c).trim() === "");
@@ -279,8 +279,13 @@ function parseStudentBlock(
 
     const paper_no = colMap.paper !== undefined ? (toNumber(row[colMap.paper]) ?? null) : null;
     const date = colMap.date !== undefined ? toDateISO(row[colMap.date]) : null;
-    const obtained = colMap.obtained !== undefined ? toNumber(row[colMap.obtained]) : null;
-    const max = colMap.max !== undefined ? toNumber(row[colMap.max]) : null;
+    const mark = colMap.obtained !== undefined ? readMark(row[colMap.obtained]) : { value: null };
+    const obtained = mark.value;
+    // "26/40" in the marks cell also gives the max when the max column is empty.
+    const max = (colMap.max !== undefined ? toNumber(row[colMap.max]) : null) ?? mark.max ?? null;
+    if (mark.unreadable) warnings.push(`${subject}: marks “${mark.unreadable}” isn't a number — left blank`);
+    if (obtained != null && max != null && obtained > max) warnings.push(`${subject}: marks ${obtained} are more than the maximum ${max}`);
+    if (obtained != null && obtained < 0) warnings.push(`${subject}: negative marks ${obtained}`);
     const gradeCell = colMap.grade !== undefined ? row[colMap.grade] : "";
     const grade = String(gradeCell ?? "").trim() || null;
 
@@ -414,7 +419,7 @@ const SKIP_SHEET_PATTERNS = [
 // Top-level: parse an ArrayBuffer / Uint8Array to a ParsedFile
 // ============================================================
 export function parseResultsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedFile {
-  const wb = XLSX.read(buf, { cellDates: true });
+  const wb = XLSX.read(buf, { cellDates: true, raw: true });   // raw: CSV text stays text (no UTC date guessing)
 
   const allStudents: ParsedStudentBlock[] = [];
   const warnings: string[] = [];
@@ -437,6 +442,10 @@ export function parseResultsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedFile 
     for (const s of students) {
       if (!s.raw_student_name && wb.SheetNames.length > 1) {
         s.raw_student_name = name.trim();
+      }
+      // Per-student problems go into the list the upload screen shows.
+      for (const w of s.warnings) {
+        warnings.push(`${s.raw_student_name || `Sheet “${name}”`}${s.roll_no != null ? ` (roll ${s.roll_no})` : ""}: ${w}`);
       }
     }
 

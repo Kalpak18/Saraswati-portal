@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { normalizeStandard, normalizeDivision, parseNum, toArabicDigits } from "@/lib/i18n/normalize";
-import { toDateISO } from "@/lib/excel/parseResults";
+import { toISODate as toDateISO } from "@/lib/excel/dates";
+import { readMark } from "@/lib/excel/parseResults";
 import { detectLevel, detectMedal, parseRank, percentOf, type Level, type Medal } from "@/lib/achievements";
 
 // Reads a competitive-exam result sheet (Olympiad, NMMS, scholarship,
@@ -269,8 +270,11 @@ function parseSheet(ws: XLSX.WorkSheet, sheetName: string) {
     const divRaw = str(get("division"));
     const division = divRaw ? normalizeDivision(divRaw) : null;
 
-    const score = parseNum(get("score"));
-    const max = parseNum(get("max")) ?? headerMax;
+    // "52/60", "५२", "AB" — read like report-card marks.
+    const mark = readMark(get("score"));
+    const score = mark.value;
+    const max = parseNum(get("max")) ?? mark.max ?? headerMax;
+    if (mark.unreadable) warnings.push(`Score "${mark.unreadable}" isn't a number`);
 
     let percentage: number | null = null;
     const pRaw = get("percent");
@@ -327,7 +331,7 @@ const SKIP_SHEET = [/^how\s*to/i, /^notes?$/i, /^instructions?$/i, /^readme$/i, 
 // Entry point
 // ============================================================
 export function parseAchievementsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedAchievementFile {
-  const wb = XLSX.read(buf, { cellDates: true });
+  const wb = XLSX.read(buf, { cellDates: true, raw: true });   // raw: CSV text stays text (no UTC date guessing)
   const out: ParsedAchievementFile = {
     exam_name: null, level: null, academic_year: null, rows: [], columns: [], warnings: [],
   };
