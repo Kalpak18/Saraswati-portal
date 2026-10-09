@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Home, Calendar, Users, Trophy, Camera, MessageSquare, ArrowRight, Sparkles,
+  Home, Calendar, Users, Trophy, Medal, Camera, LayoutTemplate, Megaphone, Info, MessageSquare, ArrowRight, Sparkles,
 } from "lucide-react";
 export const dynamic = "force-dynamic";
 
@@ -13,21 +13,46 @@ const TILES: {
   ready: boolean;
 }[] = [
   {
+    href: "/admin/website/home",
+    title: "Home page",
+    description: "Add, remove, reorder and rename every section — banners, results, events, cards, text.",
+    icon: LayoutTemplate,
+    tone: "indigo",
+    ready: true,
+  },
+  {
+    href: "/admin/website/about",
+    title: "About page",
+    description: "Heading, vision / mission / values cards and any sections you add.",
+    icon: Info,
+    tone: "green",
+    ready: true,
+  },
+  {
     href: "/admin/website/hero",
     title: "Home hero",
-    description: "Title, tagline, cover photo, CTA buttons on the / page.",
+    description: "Full-screen school photo or video that opens the home page.",
     icon: Sparkles,
     tone: "indigo",
     ready: true,
   },
   {
+    href: "/admin/website/notices",
+    title: "Notice board",
+    description: "Admission, result, exam and holiday updates with PDF attachments.",
+    icon: Megaphone,
+    tone: "red",
+    ready: true,
+  },
+  {
     href: "/admin/website/events",
     title: "Events",
-    description: "Add & edit events with photo galleries.",
+    description: "Events with photo galleries — they play through the home page story.",
     icon: Calendar,
     tone: "purple",
-    ready: false,
+    ready: true,
   },
+
   {
     href: "/admin/website/team",
     title: "Team",
@@ -39,10 +64,18 @@ const TILES: {
   {
     href: "/admin/website/achievements",
     title: "Achievements",
-    description: "Academic, sports and cultural highlights.",
+    description: "Import Olympiad / NMMS / scholarship results, or add sports & cultural wins.",
     icon: Trophy,
     tone: "amber",
-    ready: false,
+    ready: true,
+  },
+  {
+    href: "/admin/website/toppers",
+    title: "Toppers",
+    description: "Rank students from uploaded marks and feature them on the site.",
+    icon: Medal,
+    tone: "green",
+    ready: true,
   },
   {
     href: "/admin/website/gallery",

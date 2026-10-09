@@ -1,14 +1,8 @@
-import { createSupabaseServer } from "@/lib/supabase/server";
-import AboutContent from "./AboutContent";
+import { PageSections } from "../components/PageSections";
 
 export const metadata = { title: "About" };
 
-export default async function AboutPage() {
-  const supabase = await createSupabaseServer();
-  const { data: sections } = await supabase
-    .from("about_sections")
-    .select("key, heading, body_html, display_order")
-    .order("display_order", { ascending: true });
-
-  return <AboutContent sections={sections ?? []} />;
+/** The About page is built in Website → About page, like the home page. */
+export default function AboutPage() {
+  return <PageSections page="about" />;
 }

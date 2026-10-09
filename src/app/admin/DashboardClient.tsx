@@ -4,12 +4,17 @@ import Link from "next/link";
 import { GraduationCap, Users, FileSpreadsheet, Upload, ArrowRight, Download, Sparkles } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { dict, t } from "@/lib/i18n/dict";
+import { schoolNameFor } from "@/lib/schoolName";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function DashboardClient({
-  classesCount, studentsCount, examsCount, schoolName,
-}: { classesCount: number; studentsCount: number; examsCount: number; schoolName?: string }) {
+  classesCount, studentsCount, examsCount, school,
+}: {
+  classesCount: number; studentsCount: number; examsCount: number;
+  school: { name: string | null; name_mr: string | null };
+}) {
   const { lang } = useLang();
+  const schoolName = schoolNameFor(school, lang, "");
 
   const cards: {
     label: string;

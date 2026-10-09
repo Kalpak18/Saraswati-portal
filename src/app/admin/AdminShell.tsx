@@ -11,13 +11,20 @@ import { cn } from "@/lib/utils";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
 import { useLang } from "@/lib/i18n/LangContext";
 import { dict, t } from "@/lib/i18n/dict";
+import { schoolNameFor } from "@/lib/schoolName";
 
 export default function AdminShell({
-  children, userEmail, schoolName, logoUrl,
-}: { children: ReactNode; userEmail: string; schoolName: string; logoUrl: string | null }) {
+  children, userEmail, school, logoUrl,
+}: {
+  children: ReactNode;
+  userEmail: string;
+  school: { name: string | null; name_mr: string | null };
+  logoUrl: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { lang, setLang } = useLang();
+  const schoolName = schoolNameFor(school, lang, "Saraswati Portal");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);

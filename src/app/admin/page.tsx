@@ -1,5 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
 import DashboardClient from "./DashboardClient";
+import { getSchoolInfo } from "@/lib/school";
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServer();
@@ -8,12 +9,12 @@ export default async function DashboardPage() {
     { count: divisionsCount },
     { count: studentsCount },
     { count: examsCount },
-    { data: school },
+    school,
   ] = await Promise.all([
     supabase.from("divisions").select("*", { count: "exact", head: true }),
     supabase.from("students").select("*", { count: "exact", head: true }),
     supabase.from("exams").select("*", { count: "exact", head: true }),
-    supabase.from("school_settings").select("name").limit(1).maybeSingle(),
+    getSchoolInfo(),
   ]);
 
   return (
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
       classesCount={divisionsCount ?? 0}
       studentsCount={studentsCount ?? 0}
       examsCount={examsCount ?? 0}
-      schoolName={school?.name ?? ""}
+      school={{ name: school.name, name_mr: school.name_mr }}
     />
   );
 }

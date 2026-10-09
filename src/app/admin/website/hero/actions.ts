@@ -3,48 +3,82 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/server";
-import { uploadPublicImage, deletePublicImage } from "@/lib/storage";
+import { uploadPublicImage, deletePublicImage, createSignedVideoUpload } from "@/lib/storage";
+import { slidesFromRow } from "@/lib/hero";
 
-const HeroSchema = z.object({
-  title: z.string().max(200).default(""),
-  tagline: z.string().max(500).default(""),
-  meta_line: z.string().max(200).nullable().or(z.literal("").transform(() => null)),
-  primary_cta_label: z.string().min(1).max(80),
-  primary_cta_href: z.string().min(1).max(200),
-  secondary_cta_label: z.string().max(80).nullable().or(z.literal("").transform(() => null)),
-  secondary_cta_href: z.string().max(200).nullable().or(z.literal("").transform(() => null)),
-  cover_photo_url: z.string().max(500).nullable().or(z.literal("").transform(() => null)),
+async function requireUser() {
+  const supabase = await createSupabaseServer();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error("Not signed in");
+  return supabase;
+}
+
+const Slide = z.object({
+  id: z.string().min(1).max(64),
+  type: z.enum(["photo", "video"]),
+  url: z.string().url().max(500),
+  poster_url: z.string().url().max(500).nullable().optional(),
+  duration: z.number().int().min(2).max(60).nullable().optional(),
+  effect: z.enum(["zoom-in", "zoom-out", "drone", "drone-rise", "pan-left", "pan-right", "none"]).nullable().optional(),
+  fit: z.enum(["fill", "contain"]).nullable().optional(),
 });
 
-export async function saveHero(input: unknown) {
-  const p = HeroSchema.parse(input);
-  const supabase = await createSupabaseServer();
+// Nothing is required: no slides = the calm brand-colour background.
+const HeroSchema = z.object({
+  title: z.string().max(200).default(""),
+  slides: z.array(Slide).max(12),
+  slide_seconds: z.number().int().min(2).max(60).default(6),
+  slide_effect: z.enum(["zoom-in", "zoom-out", "drone", "drone-rise", "pan-left", "pan-right", "none"]).default("zoom-in"),
+  hero_height: z.enum(["full", "tall", "medium", "short", "original"]).default("full"),
+});
 
-  // Fetch existing so we can delete an orphaned old cover after the row updates.
+const urlsOf = (slides: z.infer<typeof Slide>[]) =>
+  new Set(slides.flatMap((s) => [s.url, s.poster_url ?? null]).filter((u): u is string => !!u));
+
+export async function saveHero(input: unknown): Promise<{ warning?: string }> {
+  const p = HeroSchema.parse(input);
+  const supabase = await requireUser();
+
   const { data: existing } = await supabase
     .from("hero_content")
-    .select("id, cover_photo_url")
+    .select("id, slides, cover_photo_url, cover_video_url")
     .limit(1)
     .maybeSingle();
 
-  const payload = {
+  // Keep the old single-slot columns in step with the first slide, so
+  // anything still reading them shows something sensible.
+  const first = p.slides[0];
+  const payload: Record<string, unknown> = {
     title: p.title,
-    tagline: p.tagline,
-    meta_line: p.meta_line,
-    primary_cta_label: p.primary_cta_label,
-    primary_cta_href: p.primary_cta_href,
-    secondary_cta_label: p.secondary_cta_label,
-    secondary_cta_href: p.secondary_cta_href,
-    cover_photo_url: p.cover_photo_url,
+    slides: p.slides,
+    slide_seconds: p.slide_seconds,
+    slide_effect: p.slide_effect,
+    hero_height: p.hero_height,
+    media_type: first?.type ?? "photo",
+    cover_photo_url: first ? (first.type === "photo" ? first.url : first.poster_url ?? null) : null,
+    cover_video_url: first?.type === "video" ? first.url : null,
   };
 
+  let warning: string | undefined;
   if (existing?.id) {
-    const { error } = await supabase.from("hero_content").update(payload).eq("id", existing.id);
-    if (error) throw new Error(error.message);
-    // If the cover changed to a different value (including null), remove the old file.
-    if (existing.cover_photo_url && existing.cover_photo_url !== p.cover_photo_url) {
-      await deletePublicImage(existing.cover_photo_url);
+    let { error } = await supabase.from("hero_content").update(payload).eq("id", existing.id);
+    if (error && /slide_seconds|slide_effect|hero_height/.test(error.message)) {
+      // Columns not added yet: save everything else, per-slide settings included.
+      delete payload.slide_seconds;
+      delete payload.slide_effect;
+      delete payload.hero_height;
+      ({ error } = await supabase.from("hero_content").update(payload).eq("id", existing.id));
+      warning = "Saved. Run the latest supabase/home_story.sql to store the hero height (full screen is used until then).";
     }
+    if (error) {
+      if (/slides/.test(error.message)) throw new Error("Run the latest supabase/home_story.sql to enable the hero slideshow.");
+      throw new Error(error.message);
+    }
+    // Delete files no longer used by any slide.
+    const keep = urlsOf(p.slides);
+    const before = urlsOf(slidesFromRow(existing));
+    for (const u of [existing.cover_photo_url, existing.cover_video_url]) if (u) before.add(u);
+    for (const u of before) if (!keep.has(u)) await deletePublicImage(u);
   } else {
     const { error } = await supabase.from("hero_content").insert(payload);
     if (error) throw new Error(error.message);
@@ -52,12 +86,18 @@ export async function saveHero(input: unknown) {
 
   revalidatePath("/");
   revalidatePath("/admin/website/hero");
+  return { warning };
 }
 
-/** Server action wired to the ImageUpload primitive on the Hero editor. */
 export async function uploadHeroImage(fd: FormData): Promise<{ url: string }> {
+  await requireUser();
   const file = fd.get("file") as File | null;
   if (!file) throw new Error("No file provided");
-  const { url } = await uploadPublicImage("hero", file);
-  return { url };
+  return uploadPublicImage("hero", file);
+}
+
+/** Hands the browser a one-time URL to upload a hero video directly. */
+export async function startHeroVideoUpload(fileName: string) {
+  await requireUser();
+  return createSignedVideoUpload(z.string().min(1).max(200).parse(fileName));
 }

@@ -4,6 +4,8 @@ import { useEffect, useState, useSyncExternalStore, useTransition } from "react"
 import Link from "next/link";
 import { ArrowLeft, Home, Search, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useLang } from "@/lib/i18n/LangContext";
+import { schoolNameFor } from "@/lib/schoolName";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { DobPicker } from "@/components/ui/DobPicker";
@@ -16,7 +18,7 @@ import {
   type LookupStudent,
 } from "./actions";
 
-type School = { name: string | null; logo_url: string | null };
+type School = { name: string | null; name_mr: string | null; logo_url: string | null };
 type Step = "identify" | "children" | "student";
 
 // Survives the round-trip to a report card and back, so "← Back" does not
@@ -65,6 +67,7 @@ function percentTone(p: number) {
 }
 
 export default function LookupForm({ school }: { school: School }) {
+  const { lang } = useLang();
   const [mobile, setMobile] = useState("");
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
   const [dob, setDob] = useState("");
@@ -192,7 +195,7 @@ export default function LookupForm({ school }: { school: School }) {
               />
             )}
             <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-900">
-              {school.name || "Saraswati Portal"}
+              {schoolNameFor(school, lang, "Saraswati Portal")}
             </h1>
             <p className="inline-flex items-center gap-1.5 text-sm text-ink-500">
               <Search className="h-3.5 w-3.5" />
@@ -334,7 +337,7 @@ export default function LookupForm({ school }: { school: School }) {
               <img src={school.logo_url} alt="" className="h-6 w-6 shrink-0 rounded object-contain" />
             )}
             <span className="truncate text-sm font-medium text-ink-700 group-hover:text-brand-800">
-              {school.name || "Saraswati Portal"}
+              {schoolNameFor(school, lang, "Saraswati Portal")}
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-3">

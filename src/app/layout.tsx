@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Inter, Fraunces, Noto_Sans_Devanagari } from "next/font/google";
+import { Inter, Fraunces, Noto_Sans_Devanagari, Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
 import { LangProvider } from "@/lib/i18n/LangContext";
 import { Toaster } from "sonner";
 import { RouteProgressBar } from "@/components/ui/RouteProgressBar";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
+import { getSchoolInfo } from "@/lib/school";
+import { themeCss } from "@/lib/theme";
 
 // -----------------------------------------------------------------------------
 // Type system
@@ -25,6 +27,21 @@ const fraunces = Fraunces({
   display: "swap",
   axes: ["SOFT", "opsz"],
   variable: "--font-fraunces",
+});
+// Optional heading fonts for Settings → Appearance. Not preloaded: the
+// browser only downloads one if the theme actually uses it.
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+  variable: "--font-playfair",
+});
+const poppins = Poppins({
+  subsets: ["latin", "devanagari"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+  preload: false,
+  variable: "--font-poppins",
 });
 const devanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari", "latin"],
@@ -49,12 +66,20 @@ export const viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout(props: LayoutProps<"/">) {
+export default async function RootLayout(props: LayoutProps<"/">) {
+  // The saved appearance (brand colour, font, corners) as CSS variables.
+  const css = themeCss((await getSchoolInfo()).theme);
   return (
     <html
-      lang="mr"
-      className={`h-full ${inter.variable} ${fraunces.variable} ${devanagari.variable}`}
+      lang="en"
+      className={`h-full ${inter.variable} ${fraunces.variable} ${devanagari.variable} ${playfair.variable} ${poppins.variable}`}
     >
+      {css && (
+        <head>
+          {/* Unlayered, so it overrides the default tokens from @theme. */}
+          <style dangerouslySetInnerHTML={{ __html: css }} />
+        </head>
+      )}
       <body className="min-h-full bg-white text-slate-900 antialiased">
         <LangProvider>
           <Suspense fallback={null}>

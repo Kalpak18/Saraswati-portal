@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { Mail, Phone, MapPin, ArrowUpRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
+import { schoolNameFor, establishedLabel } from "@/lib/schoolName";
 
 export function PublicFooter({
   school,
 }: {
-  school: { name: string | null; address: string | null; logo_url: string | null };
+  school: {
+    name: string | null; name_mr: string | null; address: string; map_url: string; logo_url: string | null;
+    phone: string | null; email: string | null;
+  };
 }) {
   const { lang } = useLang();
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
-  const name = school.name || "Saraswati School";
+  const name = schoolNameFor(school, lang);
   const year = new Date().getFullYear();
 
   const columns: { heading: string; links: { href: string; label: string }[] }[] = [
@@ -20,6 +24,7 @@ export function PublicFooter({
       links: [
         { href: "/lookup",              label: t("परिणाम पहा", "Check Result") },
         { href: "/academics/toppers",   label: t("गुणवंत विद्यार्थी", "Toppers") },
+        { href: "/achievements",        label: t("यशोगाथा", "Achievements") },
         { href: "/academics/faculty",   label: t("शिक्षक वर्ग", "Faculty") },
         { href: "/academics/downloads", label: t("डाउनलोड", "Downloads") },
       ],
@@ -27,6 +32,7 @@ export function PublicFooter({
     {
       heading: t("शाळा", "School"),
       links: [
+        { href: "/notices", label: t("सूचना फलक", "Notice board") },
         { href: "/about",   label: t("आमच्याबद्दल", "About us") },
         { href: "/life",    label: t("शालेय जीवन", "School life") },
         { href: "/contact", label: t("संपर्क", "Contact") },
@@ -53,7 +59,10 @@ export function PublicFooter({
                   {name.trim().charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="font-display text-xl font-semibold text-white">{name}</div>
+              <div>
+                <div className="font-display text-xl font-semibold text-white">{name}</div>
+                <div className="text-xs font-medium uppercase tracking-widest text-accent-300">{establishedLabel(lang)}</div>
+              </div>
             </div>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-ink-300">
               {t(
@@ -62,21 +71,36 @@ export function PublicFooter({
               )}
             </p>
 
-            {school.address && (
-              <div className="mt-6 flex items-start gap-3 text-sm text-ink-300">
-                <MapPin className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
-                <span>{school.address}</span>
-              </div>
+            <a
+              href={school.map_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group mt-6 flex items-start gap-3 text-sm text-ink-300 hover:text-accent-300"
+            >
+              <MapPin className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
+              <span>
+                {school.address}
+                <span className="mt-1 flex items-center gap-1 text-xs font-semibold text-accent-300 group-hover:underline">
+                  {t("नकाशावर पहा", "Open in Google Maps")}
+                  <ArrowUpRight className="h-3 w-3" />
+                </span>
+              </span>
+            </a>
+            {school.phone && (
+              <a href={`tel:${school.phone.replace(/[^\d+]/g, "")}`} className="mt-2 flex items-start gap-3 text-sm text-ink-300 hover:text-accent-300">
+                <Phone className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
+                <span className="tabular-nums">{school.phone}</span>
+              </a>
             )}
             <div className="mt-2 flex items-start gap-3 text-sm text-ink-300">
-              <Phone className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
-              <span>{t("फोन तपशील लवकरच", "Phone details coming soon")}</span>
-            </div>
-            <div className="mt-2 flex items-start gap-3 text-sm text-ink-300">
               <Mail className="mt-0.5 h-4 w-4 flex-none text-accent-400" />
-              <Link href="/contact" className="hover:text-accent-300 hover:underline">
-                {t("आम्हाला संदेश पाठवा", "Send us a message")}
-              </Link>
+              {school.email ? (
+                <a href={`mailto:${school.email}`} className="hover:text-accent-300 hover:underline">{school.email}</a>
+              ) : (
+                <Link href="/contact" className="hover:text-accent-300 hover:underline">
+                  {t("आम्हाला संदेश पाठवा", "Send us a message")}
+                </Link>
+              )}
             </div>
           </div>
 

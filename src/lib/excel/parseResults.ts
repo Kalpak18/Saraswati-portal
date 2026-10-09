@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import {
   splitLabelValue, isRollLabel, isDivisionLabel, isStandardLabel, isGRLabel,
-  normalizeDivision, normalizeStandard, parseNum,
+  normalizeDivision, normalizeStandard, parseNum, toArabicDigits,
 } from "@/lib/i18n/normalize";
 
 // ============================================================
@@ -149,7 +149,7 @@ function toNumber(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function toDateISO(v: unknown): string | null {
+export function toDateISO(v: unknown): string | null {
   if (v == null || v === "") return null;
   if (v instanceof Date) return v.toISOString().slice(0, 10);
   if (typeof v === "number") {
@@ -157,7 +157,7 @@ function toDateISO(v: unknown): string | null {
     if (!d) return null;
     return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
   }
-  const s = String(v).trim();
+  const s = toArabicDigits(String(v)).trim();
   // ISO already
   const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;

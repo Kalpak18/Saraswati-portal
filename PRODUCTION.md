@@ -29,7 +29,7 @@ Everything needed to put this portal online and keep it running for a school.
 
 ## 2. Deploy
 
-1. **Apply the database migration.** Supabase → SQL Editor → paste `supabase/production.sql` → Run. Safe to re-run.
+1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings.
 2. **Push to GitHub**, then Vercel → *Add New Project* → import the repo.
 3. **Set environment variables** in Vercel (*Settings → Environment Variables*), for Production **and** Preview:
 

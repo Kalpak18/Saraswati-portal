@@ -1,5 +1,6 @@
 "use client";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,11 @@ const sizeMap = {
   xl: "max-w-2xl",
   "2xl": "max-w-3xl",
 } as const;
+
+// Open dialogs, innermost last. Only the top one reacts to Escape / Tab, so
+// a dialog opened from inside another (e.g. the photo editor inside a form)
+// doesn't close or trap focus for the one underneath.
+const openStack: symbol[] = [];
 
 export function Modal({
   open,
@@ -34,6 +40,9 @@ export function Modal({
   closeOnBackdrop?: boolean;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const uid = useId();
+  const titleId = `${uid}-title`;
+  const descId = `${uid}-desc`;
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
   // Keep the latest onClose in a ref so the mount effect below doesn't re-run
@@ -47,6 +56,8 @@ export function Modal({
     if (!open) return;
 
     returnFocusRef.current = document.activeElement as HTMLElement | null;
+    const me = Symbol("modal");
+    openStack.push(me);
 
     // Lock background scroll so the dialog is the only scrollable surface.
     const prev = document.body.style.overflow;
@@ -61,6 +72,7 @@ export function Modal({
     });
 
     const onKey = (e: KeyboardEvent) => {
+      if (openStack[openStack.length - 1] !== me) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onCloseRef.current();
@@ -86,6 +98,7 @@ export function Modal({
     document.addEventListener("keydown", onKey);
 
     return () => {
+      openStack.splice(openStack.indexOf(me), 1);
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
       returnFocusRef.current?.focus?.();
@@ -95,9 +108,11 @@ export function Modal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  // Portal to <body>: a dialog opened inside another dialog would otherwise be
+  // positioned by the outer one's CSS transform instead of the viewport.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center">
       <div
         className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
@@ -107,8 +122,8 @@ export function Modal({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={title ? "modal-title" : undefined}
-        aria-describedby={description ? "modal-description" : undefined}
+        aria-labelledby={title ? titleId : undefined}
+        aria-describedby={description ? descId : undefined}
         tabIndex={-1}
         className={cn(
           "relative z-10 my-auto w-full rounded-2xl bg-white shadow-2xl outline-none ring-1 ring-ink-100",
@@ -121,12 +136,12 @@ export function Modal({
           <div className="flex items-start justify-between gap-4 border-b border-ink-100 px-6 py-5">
             <div className="min-w-0 flex-1">
               {title && (
-                <h2 id="modal-title" className="truncate font-display text-lg font-semibold text-ink-900">
+                <h2 id={titleId} className="truncate font-display text-lg font-semibold text-ink-900">
                   {title}
                 </h2>
               )}
               {description && (
-                <p id="modal-description" className="mt-1 text-sm text-ink-500">
+                <p id={descId} className="mt-1 text-sm text-ink-500">
                   {description}
                 </p>
               )}
@@ -145,7 +160,8 @@ export function Modal({
         )}
         <div className="px-6 py-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
