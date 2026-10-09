@@ -19,6 +19,7 @@ export type MediaKind =
   | "banners"
   | "video"
   | "notices"
+  | "downloads"
   | "logo";
 
 // 50 MB: the Supabase free-tier ceiling per object. Photos never get near
@@ -108,6 +109,10 @@ async function createSignedUpload(kind: MediaKind, fileName: string, allowed: st
 
 export function createSignedVideoUpload(fileName: string) {
   return createSignedUpload("video", fileName, ["mp4", "webm", "mov", "m4v"]);
+}
+
+export function createSignedDownloadUpload(fileName: string) {
+  return createSignedUpload("downloads", fileName, ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"]);
 }
 
 export function createSignedNoticeUpload(fileName: string) {

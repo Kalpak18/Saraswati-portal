@@ -91,7 +91,8 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
         )}
       </section>
 
-      {/* Galleries */}
+      {/* Galleries — only once albums exist (events carry their own photos). */}
+      {albums.length > 0 && (
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow={t("गॅलरी", "Gallery")}
@@ -139,6 +140,7 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
           </div>
         )}
       </section>
+      )}
     </>
   );
 }

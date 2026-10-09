@@ -1,7 +1,8 @@
 import Link from "next/link";
 import {
-  Home, Calendar, Users, Trophy, Medal, Camera, LayoutTemplate, Megaphone, Info, MessageSquare, ArrowRight, Sparkles,
+  Home, Calendar, Users, Trophy, Medal, FileDown, LayoutTemplate, Megaphone, Info, MessageSquare, ArrowRight, Sparkles,
 } from "lucide-react";
+import { createSupabaseServer } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const TILES: {
@@ -59,7 +60,7 @@ const TILES: {
     description: "Leadership, teachers, and support staff.",
     icon: Users,
     tone: "green",
-    ready: false,
+    ready: true,
   },
   {
     href: "/admin/website/achievements",
@@ -78,12 +79,12 @@ const TILES: {
     ready: true,
   },
   {
-    href: "/admin/website/gallery",
-    title: "Gallery",
-    description: "Photo albums organised by event.",
-    icon: Camera,
+    href: "/admin/website/downloads",
+    title: "Downloads",
+    description: "Calendar, forms, circulars and syllabus for parents to download.",
+    icon: FileDown,
     tone: "blue",
-    ready: false,
+    ready: true,
   },
   {
     href: "/admin/website/messages",
@@ -91,7 +92,7 @@ const TILES: {
     description: "View messages sent from the public contact form.",
     icon: MessageSquare,
     tone: "red",
-    ready: false,
+    ready: true,
   },
 ];
 
@@ -104,7 +105,10 @@ const tones: Record<string, { bg: string; text: string }> = {
   red:    { bg: "bg-red-50",    text: "text-red-600" },
 };
 
-export default function WebsiteIndexPage() {
+export default async function WebsiteIndexPage() {
+  const supabase = await createSupabaseServer();
+  const { count: newMessages } = await supabase
+    .from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new");
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -146,7 +150,12 @@ export default function WebsiteIndexPage() {
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-base font-semibold text-ink-900">{t.title}</h3>
+              <h3 className="mt-4 flex items-center gap-2 text-base font-semibold text-ink-900">
+                {t.title}
+                {t.href.endsWith("/messages") && (newMessages ?? 0) > 0 && (
+                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">{newMessages} new</span>
+                )}
+              </h3>
               <p className="mt-1 text-xs text-ink-500">{t.description}</p>
               {t.ready && (
                 <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-700">
