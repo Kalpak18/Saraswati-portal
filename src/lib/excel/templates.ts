@@ -298,7 +298,7 @@ export function classMarksSheetTemplate(opts: {
     ["Row 6+", "One row per student. All divisions of the class can be in this one sheet."],
     [""],
     ["Marks", "Numbers, Marathi digits, 12½, or 26/40. AB / Absent / गैरहजर / - for absent."],
-    ["Ignored", "Sr No, GR, Total, %, Result, Grade, Rank and Remarks columns are skipped automatically."],
+    ["Extra columns", "Using your own register? Columns that aren't subjects (Sr No, GR No, Total, %, Result, Rank, Remarks) are skipped, so they never show up as subjects."],
     [""],
     ["Upload at: Results → Upload, choosing the class. Each student is matched by division + roll no."],
   ]);
