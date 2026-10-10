@@ -10,6 +10,17 @@
 -- an index on marks.subject_id every subject deleted scans all marks.
 create index if not exists marks_subject_idx on marks (subject_id);
 
+-- Marks is the one big table (~1M rows a year), and every index on it costs
+-- space on each row. These three are already covered by others, so they
+-- only cost space (keeps a full school inside the free 500 MB for longer):
+--   marks_exam_idx (exam_id)                     ← unique (exam_id, student_id, subject_id)
+--   marks_exam_student_idx (exam_id, student_id) ← same unique index
+--   marks_student_idx (student_id)               ← marks_student_exam_idx (student_id, exam_id)
+create index if not exists marks_student_exam_idx on marks (student_id, exam_id);
+drop index if exists marks_exam_idx;
+drop index if exists marks_exam_student_idx;
+drop index if exists marks_student_idx;
+
 -- Deleting a student checks these foreign keys.
 create index if not exists toppers_student_idx on toppers (student_id);
 create index if not exists achievements_student_idx on achievements (student_id);
