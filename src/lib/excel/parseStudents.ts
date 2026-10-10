@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { normalizeGender, parseNum, toArabicDigits } from "@/lib/i18n/normalize";
+import { normalizeDivision, normalizeGender, normalizeStandard, parseNum, toArabicDigits } from "@/lib/i18n/normalize";
 import { toISODate } from "@/lib/excel/dates";
 
 // Reads a class roster (Excel or CSV) into clean rows, with a clear reason
@@ -7,6 +7,9 @@ import { toISODate } from "@/lib/excel/dates";
 // them: Marathi or English headers in any order, a title row above the
 // table, Marathi digits, mobiles typed as numbers or with +91 / spaces,
 // dates as Excel dates or 14/05/2010 / 14.05.2010, and blank lines.
+//
+// One division per file, or the whole school in one file: add Class and
+// Division columns and every row says where it belongs.
 
 export type StudentRow = {
   row: number;                 // spreadsheet row, for messages
@@ -15,15 +18,20 @@ export type StudentRow = {
   parent_mobile: string;
   dob: string;                 // YYYY-MM-DD
   gender: "M" | "F" | "Other" | null;
+  /** Whole-school files only: canonical class ("१० वी") and division ("अ"). */
+  standard?: string;
+  division?: string;
 };
 
 export type StudentImport = {
   rows: StudentRow[];
   errors: { row: number; message: string }[];
   warnings: string[];
+  /** True when the file has Class + Division columns (rows carry standard/division). */
+  wholeSchool: boolean;
 };
 
-type Field = "roll" | "name" | "mobile" | "dob" | "gender";
+type Field = "roll" | "name" | "mobile" | "dob" | "gender" | "standard" | "division";
 
 const norm = (v: unknown) => toArabicDigits(String(v ?? "")).toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g, " ").trim();
 
@@ -33,10 +41,13 @@ const RULES: [Field, RegExp][] = [
   ["mobile", /mobile|phone|contact|whatsapp|मोबा|संपर्क|फोन/],
   ["roll", /\broll|हजेरी/],
   ["gender", /\b(gender|sex)\b|लिंग/],
+  ["division", /\b(div|division|section|sec)\b|तुकडी/],
+  ["standard", /\b(class|std|standard|grade)\b|इयत्ता|वर्ग/],
   ["name", /\bname\b|student|नाव|विद्यार्थी/],
 ];
 
-function classify(h: unknown): Field | null {
+/** Which roster field a header cell names (also used by the marks-sheet reader). */
+export function classify(h: unknown): Field | null {
   const s = norm(h);
   if (!s) return null;
   for (const [f, re] of RULES) {
@@ -59,7 +70,7 @@ export function normalizeMobile(v: unknown): string | null {
 
 export function parseStudentsWorkbook(buf: ArrayBuffer | Uint8Array): StudentImport {
   const wb = XLSX.read(buf, { cellDates: true, raw: true });   // raw: CSV text stays text (no UTC date guessing)
-  const out: StudentImport = { rows: [], errors: [], warnings: [] };
+  const out: StudentImport = { rows: [], errors: [], warnings: [], wholeSchool: false };
   const sheetName = wb.SheetNames.find((n) => !/how to|notes?|instructions?|readme|help|सूचना/i.test(n)) ?? wb.SheetNames[0];
   const grid = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], { header: 1, defval: "", blankrows: true, raw: true });
 
@@ -75,11 +86,15 @@ export function parseStudentsWorkbook(buf: ArrayBuffer | Uint8Array): StudentImp
     out.errors.push({ row: 1, message: "Couldn't find the header row — it needs at least a Roll No and a Name column (e.g. roll_no, student_name)." });
     return out;
   }
+  out.wholeSchool = col.standard !== undefined && col.division !== undefined;
+  if (col.standard !== undefined && col.division === undefined) {
+    out.warnings.push("There's a Class column but no Division column — add one to import the whole school; for now everything goes into the division you picked.");
+  }
   for (const f of ["mobile", "dob"] as const) {
     if (col[f] === undefined) out.warnings.push(`No ${f === "mobile" ? "parent mobile" : "date of birth"} column found — every row will be missing it.`);
   }
 
-  const seenRoll = new Map<number, number>();
+  const seenRoll = new Map<string, number>();   // "class|division|roll" → row
   for (let i = headerIdx + 1; i < grid.length; i++) {
     const r = grid[i] ?? [];
     const get = (f: Field) => (col[f] !== undefined ? r[col[f]!] : "");
@@ -103,10 +118,24 @@ export function parseStudentsWorkbook(buf: ArrayBuffer | Uint8Array): StudentImp
     if (!dob) problems.push(String(get("dob")).trim() ? `date of birth “${String(get("dob"))}” isn't a date (use DD/MM/YYYY)` : "date of birth is empty");
     else if (dob > new Date().toISOString().slice(0, 10)) problems.push(`date of birth ${dob} is in the future`);
 
-    if (roll != null && seenRoll.has(roll)) problems.push(`roll no ${roll} is already used in row ${seenRoll.get(roll)}`);
+    let standard: string | undefined, division: string | undefined;
+    if (out.wholeSchool) {
+      const stdRaw = String(get("standard") ?? "").trim(), divRaw = String(get("division") ?? "").trim();
+      standard = normalizeStandard(stdRaw) ?? undefined;
+      division = normalizeDivision(divRaw) ?? undefined;
+      if (!stdRaw) problems.push("class is empty");
+      else if (!standard) problems.push(`class “${stdRaw}” isn't recognised (use 1–12, e.g. 10th or १० वी)`);
+      if (!divRaw) problems.push("division is empty");
+      else if (!division) problems.push(`division “${divRaw}” isn't recognised (use A–G or अ–ग)`);
+    }
+
+    const rollKey = `${standard ?? ""}|${division ?? ""}|${roll}`;
+    if (roll != null && seenRoll.has(rollKey)) {
+      problems.push(`roll no ${roll}${out.wholeSchool ? ` in ${standard} ${division}` : ""} is already used in row ${seenRoll.get(rollKey)}`);
+    }
 
     if (problems.length) { out.errors.push({ row: rowNo, message: problems.join("; ") }); continue; }
-    seenRoll.set(roll!, rowNo);
+    seenRoll.set(rollKey, rowNo);
 
     const age = new Date().getFullYear() - Number(dob!.slice(0, 4));
     if (age < 2 || age > 25) out.warnings.push(`Row ${rowNo} (${name}): date of birth ${dob} gives age ${age} — please double-check.`);
@@ -115,6 +144,7 @@ export function parseStudentsWorkbook(buf: ArrayBuffer | Uint8Array): StudentImp
     out.rows.push({
       row: rowNo, roll_no: roll!, student_name: name, parent_mobile: mobile!, dob: dob!,
       gender: g ? normalizeGender(g) : null,
+      ...(out.wholeSchool ? { standard, division } : {}),
     });
   }
   return out;

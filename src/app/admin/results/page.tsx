@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { Upload, FileSpreadsheet, ArrowRight } from "lucide-react";
+import { Upload } from "lucide-react";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { selectAll } from "@/lib/supabase/selectAll";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
-import { Badge } from "@/components/ui/Badge";
+import ExamsList, { type ExamRow } from "./ExamsList";
 
 export default async function ResultsPage(props: PageProps<"/admin/results">) {
   const sp = await props.searchParams;
@@ -24,7 +22,7 @@ export default async function ResultsPage(props: PageProps<"/admin/results">) {
   const yearStandards = (standards ?? []).filter((s) => s.academic_year === year);
   const standardId = typeof sp.standard === "string" && yearStandards.some((s) => s.id === sp.standard) ? sp.standard : "";
 
-  const list = await selectAll((from, to) => {
+  const all = await selectAll((from, to) => {
     let q = supabase
       .from("exams")
       .select("id, test_type, academic_year, exam_start_date, exam_end_date, division_id, divisions!inner(name, standard_id, standards(name))");
@@ -32,12 +30,28 @@ export default async function ResultsPage(props: PageProps<"/admin/results">) {
     if (standardId) q = q.eq("divisions.standard_id", standardId);
     return q.order("exam_start_date", { ascending: false }).order("id").range(from, to);
   });
+  // Test names this year/class has, e.g. "आठवडी परीक्षा", "प्रथम सत्र".
+  const tests = Array.from(new Set(all.map((e) => e.test_type))).sort();
+  const test = typeof sp.test === "string" && tests.includes(sp.test) ? sp.test : "";
+  const list = test ? all.filter((e) => e.test_type === test) : all;
+
+  const exams: ExamRow[] = list.map((e) => {
+    const div = e.divisions as unknown as { name: string; standards: { name: string } | null } | null;
+    return {
+      id: e.id,
+      label: div ? `${div.standards?.name ?? ""} — ${div.name}`.trim() : "",
+      test_type: e.test_type,
+      academic_year: e.academic_year,
+      dates: e.exam_start_date === e.exam_end_date ? e.exam_start_date : `${e.exam_start_date} → ${e.exam_end_date}`,
+    };
+  });
+  const filterLabel = [year, yearStandards.find((s) => s.id === standardId)?.name, test].filter(Boolean).join(" · ");
 
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Results / Report cards"
-        description={list.length ? `${list.length} exam${list.length === 1 ? "" : "s"} uploaded` : undefined}
+        description={list.length ? `${list.length} exam${list.length === 1 ? "" : "s"} · ${filterLabel}` : undefined}
         actions={
           <Link href="/admin/results/upload">
             <Button leftIcon={<Upload className="h-4 w-4" />}>
@@ -63,80 +77,18 @@ export default async function ResultsPage(props: PageProps<"/admin/results">) {
               {yearStandards.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-xs font-medium text-ink-600">Test</span>
+            <select name="test" defaultValue={test} className="h-10 max-w-60 rounded-md border border-ink-300 bg-white px-3 text-sm">
+              <option value="">All tests</option>
+              {tests.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
           <Button type="submit" variant="secondary">Show</Button>
         </form>
       )}
 
-      <ResponsiveTable
-        head={
-          <>
-            <th className="px-4 py-3">Class</th>
-            <th className="px-4 py-3">Test type</th>
-            <th className="px-4 py-3">Academic year</th>
-            <th className="px-4 py-3">Exam dates</th>
-            <th className="px-4 py-3 text-right">Actions</th>
-          </>
-        }
-        empty={
-          <EmptyState
-            icon={<FileSpreadsheet className="h-6 w-6" />}
-            title="No exams uploaded yet"
-            description="Upload a filled result Excel to publish report cards for a division."
-            action={
-              <Link href="/admin/results/upload">
-                <Button leftIcon={<Upload className="h-4 w-4" />}>Upload new result</Button>
-              </Link>
-            }
-          />
-        }
-        rows={list.map((e) => {
-          const div = e.divisions as unknown as { name: string; standards: { name: string } | null } | null;
-          const label = div ? `${div.standards?.name ?? ""} — ${div.name}`.trim() : "";
-          const dateRange =
-            e.exam_start_date === e.exam_end_date
-              ? e.exam_start_date
-              : `${e.exam_start_date} → ${e.exam_end_date}`;
-          return {
-            key: e.id,
-            cells: (
-              <>
-                <td className="px-4 py-3 font-medium text-ink-900">{label}</td>
-                <td className="px-4 py-3 text-ink-700">{e.test_type}</td>
-                <td className="px-4 py-3 text-ink-700 tabular-nums">{e.academic_year}</td>
-                <td className="px-4 py-3 text-ink-700 tabular-nums">{dateRange}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/results/${e.id}`}
-                    className="inline-flex items-center gap-1 rounded font-medium text-brand-700 hover:text-brand-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                  >
-                    View <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </td>
-              </>
-            ),
-            mobile: (
-              <Link
-                href={`/admin/results/${e.id}`}
-                className="flex items-center justify-between gap-3 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-medium uppercase tracking-wide text-ink-500">
-                    {label}
-                  </div>
-                  <div className="mt-0.5 truncate text-base font-semibold text-ink-900">
-                    {e.test_type}
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-ink-500">
-                    <Badge tone="brand">{e.academic_year}</Badge>
-                    <span className="tabular-nums">{dateRange}</span>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 flex-none text-ink-400" />
-              </Link>
-            ),
-          };
-        })}
-      />
+      <ExamsList exams={exams} filterLabel={filterLabel} />
     </div>
   );
 }

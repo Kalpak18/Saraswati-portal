@@ -15,12 +15,20 @@ import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
-import { saveStudent as saveStudentAction, deleteStudent as deleteStudentAction, importStudents as importStudentsAction } from "./actions";
+import { saveStudent as saveStudentAction, deleteStudent as deleteStudentAction, importStudents as importStudentsAction, importSchoolStudents as importSchoolStudentsAction } from "./actions";
+import { normalizeDivision, normalizeStandard, STANDARDS } from "@/lib/i18n/normalize";
 
 // Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
 const saveStudent = clientAction(saveStudentAction);
 const deleteStudent = clientAction(deleteStudentAction);
 const importStudents = clientAction(importStudentsAction);
+const importSchoolStudents = clientAction(importSchoolStudentsAction);
+
+/** Academic year running today (starts in June): Oct 2026 → "2026-27". */
+function currentAcademicYear(d = new Date()) {
+  const y = d.getMonth() >= 5 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${y}-${String((y + 1) % 100).padStart(2, "0")}`;
+}
 
 type Std = { id: string; name: string; academic_year: string };
 type Div = { id: string; standard_id: string; name: string };
@@ -157,11 +165,34 @@ export default function StudentsClient({
 
   // Parsed roster waiting for the admin to confirm (see the import modal).
   const [review, setReview] = useState<(StudentImport & { fileName: string }) | null>(null);
+  const yearOptions = Array.from(new Set([currentAcademicYear(), ...standards.map((s) => s.academic_year)])).sort().reverse();
+  const [schoolYear, setSchoolYear] = useState(currentAcademicYear());
+
+  // Whole-school file: how many students land in each class/division, and
+  // which of those classes/divisions don't exist yet for the chosen year.
+  const schoolPlan = useMemo(() => {
+    if (!review?.wholeSchool) return null;
+    const stdOfYear = new Map(standards.filter((s) => s.academic_year === schoolYear).map((s) => [normalizeStandard(s.name) ?? s.name, s.id]));
+    const existingDiv = new Set(divisions.map((d) => `${d.standard_id}|${normalizeDivision(d.name) ?? d.name}`));
+    const groups = new Map<string, { standard: string; division: string; count: number; isNew: boolean }>();
+    for (const r of review.rows) {
+      const k = `${r.standard}|${r.division}`;
+      const g = groups.get(k);
+      if (g) { g.count++; continue; }
+      const sid = stdOfYear.get(r.standard!);
+      groups.set(k, { standard: r.standard!, division: r.division!, count: 1, isNew: !sid || !existingDiv.has(`${sid}|${r.division}`) });
+    }
+    const order = (n: string) => STANDARDS.find((x) => x.canonical === n)?.number ?? 99;
+    return Array.from(groups.values()).sort((a, b) => order(a.standard) - order(b.standard) || a.division.localeCompare(b.division));
+  }, [review, standards, divisions, schoolYear]);
 
   async function handleFile(file: File) {
-    if (!selectedDivisionId) { toast.error("Select a division first"); return; }
     try {
       const parsed = parseStudentsWorkbook(await file.arrayBuffer());
+      if (!parsed.wholeSchool && !selectedDivisionId) {
+        toast.error("Add Class and Division columns to import the whole school, or create a division first");
+        return;
+      }
       setReview({ ...parsed, fileName: file.name });
     } catch (err) {
       toast.error(`Couldn't read this file: ${(err as Error).message}`);
@@ -171,12 +202,18 @@ export default function StudentsClient({
   }
 
   function confirmImport() {
-    if (!review || !selectedDivisionId) return;
+    if (!review) return;
     const rows = review.rows.map(({ row: _r, ...rest }) => { void _r; return rest; });
     startTransition(async () => {
       try {
-        const { inserted } = await importStudents(selectedDivisionId, rows);
-        toast.success(`Imported ${inserted} students`);
+        if (review.wholeSchool) {
+          const r = await importSchoolStudents(schoolYear, rows);
+          toast.success(`Imported ${r.saved} students${r.divisions_created ? ` · created ${r.classes_created} classes, ${r.divisions_created} divisions` : ""}`);
+        } else {
+          if (!selectedDivisionId) return;
+          const { inserted } = await importStudents(selectedDivisionId, rows);
+          toast.success(`Imported ${inserted} students`);
+        }
         setReview(null);
         setImportOpen(false);
         router.refresh();
@@ -198,7 +235,6 @@ export default function StudentsClient({
             <Button
               variant="secondary"
               onClick={() => setImportOpen(true)}
-              disabled={!selectedDivisionId}
               leftIcon={<Upload className="h-4 w-4" />}
             >
               <span className="hidden sm:inline">Import Excel</span>
@@ -435,6 +471,12 @@ export default function StudentsClient({
       >
         <div className="flex flex-col gap-4 text-sm">
           <p className="text-ink-600">
+            <b>One division:</b> goes into{" "}
+            <b>{divisions.find((d) => d.id === selectedDivisionId) ? divisionLabel(divisions.find((d) => d.id === selectedDivisionId)!) : "the division selected"}</b>.{" "}
+            <b>Whole school:</b> add <code className="rounded bg-ink-100 px-1 text-xs">Class</code> and{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">Division</code> columns — every row goes to its own class, and missing classes are created.
+          </p>
+          <p className="text-ink-600">
             Columns: <code className="rounded bg-ink-100 px-1 text-xs">roll_no</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">student_name</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">parent_mobile</code>,{" "}
@@ -482,9 +524,29 @@ export default function StudentsClient({
                   <ul className="space-y-0.5">{review.warnings.slice(0, 30).map((w, i) => <li key={i}>⚠ {w}</li>)}</ul>
                 </div>
               )}
+              {schoolPlan && (
+                <div className="space-y-2 rounded-lg border border-ink-200 p-3">
+                  <label className="flex items-center gap-2 text-xs font-medium text-ink-700">
+                    Academic year
+                    <select value={schoolYear} onChange={(e) => setSchoolYear(e.target.value)} className="h-8 rounded-md border border-ink-300 bg-white px-2 text-sm">
+                      {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </label>
+                  <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
+                    {schoolPlan.map((g) => (
+                      <span key={`${g.standard}|${g.division}`} className={`rounded-full px-2 py-0.5 text-xs ${g.isNew ? "bg-brand-50 text-brand-800 ring-1 ring-brand-200" : "bg-ink-100 text-ink-700"}`}>
+                        {g.standard} {g.division} · {g.count}{g.isNew ? " · new" : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {schoolPlan.some((g) => g.isNew) && (
+                    <p className="text-xs text-brand-800">Divisions marked <b>new</b> will be created for {schoolYear}.</p>
+                  )}
+                </div>
+              )}
               {review.rows.length > 0 && (
                 <p className="text-xs text-ink-500">
-                  Students with a roll number already in this division are updated; new roll numbers are added.
+                  Students whose roll number already exists in their division are updated; new roll numbers are added.
                 </p>
               )}
             </div>

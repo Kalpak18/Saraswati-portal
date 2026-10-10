@@ -391,8 +391,36 @@ async function updateStudentMarks__impl(input: unknown) {
   revalidatePath(`/admin/results/${p.exam_id}/${p.student_id}`);
 }
 
+// ============================================================
+// Delete exams (one, selected, or everything a filter shows)
+// ============================================================
+// Removes each exam with its papers, marks and toppers. Students stay.
+async function deleteExams__impl(ids: string[]) {
+  const p = z.array(z.string().uuid()).min(1).max(5000).parse(ids);
+  const supabase = await createSupabaseServer();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error("Please sign in again");
+
+  let deleted = 0;
+  for (let i = 0; i < p.length; i += 200) {
+    const chunk = p.slice(i, i + 200);
+    // delete_exams (scale.sql) logs one audit row per exam instead of one per mark.
+    const { data, error } = await supabase.rpc("delete_exams", { p_ids: chunk });
+    if (!error) { deleted += Number(data ?? 0); continue; }
+    if (error.code !== "PGRST202" && !/delete_exams/.test(error.message)) throw new Error(error.message);
+    // scale.sql not applied yet — plain delete still works (cascades), just logs every mark.
+    const { error: dErr, count } = await supabase.from("exams").delete({ count: "exact" }).in("id", chunk);
+    if (dErr) throw new Error(dErr.message);
+    deleted += count ?? 0;
+  }
+  revalidatePath("/admin/results");
+  revalidatePath("/admin");
+  return { deleted };
+}
+
 // ---- Exported actions: errors come back as values (see lib/actionResult.ts) ----
 export async function checkUploadIdempotency(...args: Parameters<typeof checkUploadIdempotency__impl>) { return toResult(() => checkUploadIdempotency__impl(...args)); }
 export async function probeExamConflicts(...args: Parameters<typeof probeExamConflicts__impl>) { return toResult(() => probeExamConflicts__impl(...args)); }
 export async function saveBatch(...args: Parameters<typeof saveBatch__impl>) { return toResult(() => saveBatch__impl(...args)); }
 export async function updateStudentMarks(...args: Parameters<typeof updateStudentMarks__impl>) { return toResult(() => updateStudentMarks__impl(...args)); }
+export async function deleteExams(...args: Parameters<typeof deleteExams__impl>) { return toResult(() => deleteExams__impl(...args)); }

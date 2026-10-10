@@ -71,7 +71,7 @@ export function displayDivision(canonical: string, lang: "mr" | "en" = "mr"): st
 }
 
 // ============================================================
-// Standards — 5th to 12th (extensible)
+// Standards — 1st to 12th
 // ============================================================
 // Canonical Marathi form; ordinal suffix follows Marathi convention:
 //  1 ली · 2 री · 3 री · 4 थी · 5 वी · 6 वी · 7 वी · 8 वी · 9 वी · 10 वी · 11 वी · 12 वी
@@ -101,7 +101,7 @@ function stdAliases(n: number): string[] {
   return Array.from(new Set(generic.map((s) => s.toLowerCase())));
 }
 
-export const STANDARDS: StdEntry[] = ([5, 6, 7, 8, 9, 10, 11, 12] as number[]).map((n) => {
+export const STANDARDS: StdEntry[] = ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as number[]).map((n) => {
   const suffixMR = n === 1 ? "ली" : n === 2 || n === 3 ? "री" : n === 4 ? "थी" : "वी";
   const suffixEN = n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th";
   return {

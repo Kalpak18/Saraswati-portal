@@ -82,6 +82,11 @@ begin
   exception when others then
     a := null;
   end;
+  -- Deleting whole exams (delete_exams below) logs one row per exam, not
+  -- one per mark — otherwise freeing space would first fill the audit log.
+  if current_setting('app.bulk_delete', true) = 'on' then
+    return coalesce(new, old);
+  end if;
   src := coalesce(new.updated_source, old.updated_source, 'system');
   if TG_OP = 'INSERT' then
     if src = 'upload' then return new; end if;
@@ -102,7 +107,36 @@ end;
 $$ language plpgsql security definer;
 
 -- =========================================================
--- 4. Fresh statistics for the planner
+-- 4. Delete whole exams in one go (Admin → Results → Delete)
+-- =========================================================
+-- Removes the exams with their papers, marks and toppers, and records one
+-- audit row per exam (what it was, and how many marks went with it).
+create or replace function delete_exams(p_ids uuid[]) returns int as $$
+declare
+  n int;
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  insert into audit_log (actor_id, table_name, row_id, action, before, after, source)
+  select auth.uid(), 'exams', e.id, 'delete',
+         to_jsonb(e) || jsonb_build_object('marks_deleted', (select count(*) from marks m where m.exam_id = e.id)),
+         null, 'manual_edit'
+  from exams e where e.id = any(p_ids);
+
+  perform set_config('app.bulk_delete', 'on', true);   -- this transaction only
+  delete from exams where id = any(p_ids);
+  get diagnostics n = row_count;
+  return n;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke all on function delete_exams(uuid[]) from public, anon;
+grant execute on function delete_exams(uuid[]) to authenticated;
+
+-- =========================================================
+-- 5. Fresh statistics for the planner
 -- =========================================================
 analyze students;
 analyze marks;

@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import {
   studentsRosterTemplate, resultSingleTemplate, resultBulkStackedTemplate,
   resultBulkMultiSheetTemplate, competitiveResultsTemplate,
+  schoolRosterTemplate, classMarksSheetTemplate,
 } from "../src/lib/excel/templates";
 import { parseStudentsWorkbook } from "../src/lib/excel/parseStudents";
 import { parseResultsWorkbook, readMark } from "../src/lib/excel/parseResults";
@@ -188,6 +189,85 @@ console.log("• competitive exam results template");
   eq("level per row", f.rows.map((r) => r.level), ["state", "district", "state"]);
   ok("serial-number column not taken as rank", f.rows[2].rank === null);
   ok("the 37 empty template rows ignored", f.rows.length === 3);
+}
+
+// ------------------------------------------------------------------ whole-school roster
+console.log("• whole-school roster template");
+{
+  const buf = fill(schoolRosterTemplate(), "Students", "A2", [
+    ["1st", "A", 1, "Asha Patil", "9876543210", "14/05/2019", "F"],
+    ["१० वी", "ब", 1, "Om Kale", "9822014571", "05/09/2011", "M"],
+    ["10th", "B", 2, "Riya More", "9822014572", "06/09/2011", ""],
+    ["Std 4", "अ", 1, "Same roll other class", "9822014573", "01/01/2016", ""],
+    ["10", "b", 2, "Duplicate in 10 B", "9822014574", "01/01/2011", ""],
+    ["13th", "A", 1, "Bad class", "9822014575", "01/01/2011", ""],
+    ["5th", "Z", 1, "Bad division", "9822014576", "01/01/2015", ""],
+  ]);
+  const r = parseStudentsWorkbook(buf);
+  ok("detected as whole school", r.wholeSchool);
+  eq("class + division per row", r.rows.map((x) => `${x.standard} ${x.division} ${x.roll_no}`), ["१ ली अ 1", "१० वी ब 1", "१० वी ब 2", "४ थी अ 1"]);
+  eq("errors", r.errors.map((e) => e.row), [6, 7, 8]);
+  ok("duplicate is per class+division", /roll no 2 in १० वी ब is already used in row 4/.test(r.errors[0].message), r.errors[0]);
+  ok("bad class explained", /class “13th” isn't recognised/.test(r.errors[1].message), r.errors[1]);
+  ok("bad division explained", /division “Z” isn't recognised/.test(r.errors[2].message), r.errors[2]);
+  ok("500 blank rows ignored", r.rows.length + r.errors.length === 7);
+}
+{
+  const r = parseStudentsWorkbook(XLSX.write(studentsRosterTemplate(), { type: "array", bookType: "xlsx" }));
+  ok("single-division roster is not whole-school", !r.wholeSchool);
+}
+
+// ------------------------------------------------------------------ class marks sheet
+console.log("• class marks sheet template");
+{
+  const wb = classMarksSheetTemplate({ title: "10 वी प्रथम सत्र परीक्षा 2026-27", subjects: ["Marathi", "Hindi", "English", "Science 1"] });
+  XLSX.utils.sheet_add_aoa(wb.Sheets.Marks, [["परीक्षा दिनांक / Exam date :", "05/10/2026"]], { origin: "A2" });
+  XLSX.utils.sheet_add_aoa(wb.Sheets.Marks, [["पैकी गुण / Out of", "", "", 100, 100, 80, 40]], { origin: "A4" });
+  XLSX.utils.sheet_add_aoa(wb.Sheets.Marks, [["दिनांक / Paper date", "", "", "", local(2026, 10, 7), "", ""]], { origin: "A5" });
+  const buf = fill(wb, "Marks", "A6", [
+    ["अ", 1, "Asha Patil", 78, "६५", "72½", 38],
+    ["A", 2, "Rahul More", "AB", 55, 60, "41"],
+    ["ब", "१", "Om Kale", "", "", "", ""],
+    ["B", 3, "", 50, 50, 50, 20],
+    ["Z", 4, "Bad Div", 10, 10, 10, 10],
+  ]);
+  const f = parseResultsWorkbook(buf);
+  eq("title", [f.test_type, f.class_hint, f.academic_year], ["प्रथम सत्र परीक्षा", "10 वी", "2026-27"]);
+  eq("students", f.students.map((s) => `${s.division_canonical} ${s.roll_no} ${s.raw_student_name}`), ["अ 1 Asha Patil", "अ 2 Rahul More", "ब 1 Om Kale", "null 4 Bad Div"]);
+  eq("subjects (Science 1 stays a name)", f.students[0].subjects.map((x) => x.subject), ["Marathi", "Hindi", "English", "Science 1"]);
+  eq("marks", f.students.slice(0, 2).map((s) => s.subjects.map((x) => x.marks_obtained)), [[78, 65, 72.5, 38], [null, 55, 60, 41]]);
+  eq("max from Out of row", f.students[0].subjects.map((x) => x.max_marks), [100, 100, 80, 40]);
+  eq("dates: exam date, paper date overrides", f.students[0].subjects.map((x) => x.date), ["2026-10-05", "2026-10-07", "2026-10-05", "2026-10-05"]);
+  ok("over-max flagged", f.warnings.some((w) => /Rahul More.*Science 1: 41 is more than 40/.test(w)), f.warnings);
+  ok("marks without name flagged", f.warnings.some((w) => /Row 9: marks without a student name/.test(w)), f.warnings);
+  ok("bad division flagged", f.warnings.some((w) => /division “Z” isn't recognised/.test(w)), f.warnings);
+  ok("100 blank rows ignored", f.students.length === 4);
+}
+{ // pre-filled from the roster (what "Download marks sheet" gives)
+  const wb = classMarksSheetTemplate({ title: "५ वी परीक्षा 2026-27", students: [{ division: "अ", roll_no: 1, name: "Asha" }, { division: "ब", roll_no: 1, name: "Om" }] });
+  const f = parseResultsWorkbook(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+  eq("prefilled sheet round-trips", f.students.map((s) => `${s.division_canonical} ${s.roll_no} ${s.raw_student_name}`), ["अ 1 Asha", "ब 1 Om"]);
+  ok("no exam date → asked on next screen", f.warnings.some((w) => /No exam date/.test(w)), f.warnings);
+}
+{ // a school's own register: Sr No / Total / % / Result columns, max in headings, one tab per division
+  const tab = (rows: unknown[][]) => XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, tab([
+    ["Saraswati Vidyalaya — 8th Unit Test 1 2026-27"],
+    ["Sr No", "Roll No", "Name of Student", "Marathi (25)", "Maths/25", "Total", "%", "Result"],
+    [1, 1, "Kiran Jadhav", 20, 22, 42, 84, "Pass"],
+    [2, 2, "Neha Shinde", "ab", 18, 18, 36, "Fail"],
+    ["", "", "Total", "", "", "", "", ""],
+  ]), "A");
+  XLSX.utils.book_append_sheet(wb, tab([
+    ["Saraswati Vidyalaya — 8th Unit Test 1 2026-27"],
+    ["Sr No", "Roll No", "Name of Student", "Marathi (25)", "Maths/25", "Total", "%", "Result"],
+    [1, 1, "Sahil Patil", 15, 25, 40, 80, "Pass"],
+  ]), "B");
+  const f = parseResultsWorkbook(XLSX.write(wb, { type: "array", bookType: "xlsx" }));
+  eq("division from tab name", f.students.map((s) => `${s.division_canonical} ${s.roll_no} ${s.raw_student_name}`), ["अ 1 Kiran Jadhav", "अ 2 Neha Shinde", "ब 1 Sahil Patil"]);
+  eq("only real subjects, max from heading", f.students[0].subjects.map((x) => `${x.subject}/${x.max_marks}`), ["Marathi/25", "Maths/25"]);
+  eq("absent", f.students[1].subjects[0].marks_obtained, null);
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

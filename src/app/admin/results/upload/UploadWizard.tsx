@@ -5,7 +5,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Check, FileSpreadsheet, X, UserPlus, AlertTriangle } from "lucide-react";
+import { Check, FileSpreadsheet, X, UserPlus, AlertTriangle, Download } from "lucide-react";
+import * as XLSX from "xlsx";
+import { classMarksSheetTemplate } from "@/lib/excel/templates";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -53,6 +55,8 @@ type StepB = {
   fallback_division_id: string;
   test_type: string;
   academic_year: string;
+  /** Used for students whose rows carry no paper dates (e.g. a marks sheet without dates). */
+  exam_date: string;
   resolved: ResolvedStudent[];
   rostersByDivision: Record<string, Candidate[]>;
 };
@@ -84,6 +88,7 @@ export default function UploadWizard({
   const [standardId, setStandardId] = useState(standards[0]?.id ?? "");
   const [step, setStep] = useState<StepA | StepB | StepC>({ kind: "select" });
   const [busy, setBusy] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const [pending, startTransition] = useTransition();
 
   // Modal state for conflicts
@@ -99,6 +104,34 @@ export default function UploadWizard({
 
   const divisionsOfStandard = (sid: string) => divisions.filter((d) => d.standard_id === sid);
   const divNameById = new Map(divisions.map((d) => [d.id, d.name]));
+
+  // A marks sheet already listing every student of the class (all divisions),
+  // so teachers only type marks.
+  async function downloadMarksSheet() {
+    const std = stdById.get(standardId);
+    const divs = divisionsOfStandard(standardId);
+    if (!std || divs.length === 0) { toast.error("Add divisions to this class first"); return; }
+    setBusy(true);
+    try {
+      const supabase = createSupabaseBrowser();
+      const rows = await selectAll<{ roll_no: number; student_name: string; division_id: string }>((from, to) =>
+        supabase.from("students").select("roll_no, student_name, division_id")
+          .in("division_id", divs.map((d) => d.id)).eq("is_active", true).order("id").range(from, to),
+      );
+      const order = new Map(divs.map((d, i) => [d.id, i]));
+      rows.sort((a, b) => (order.get(a.division_id)! - order.get(b.division_id)!) || a.roll_no - b.roll_no);
+      const wb = classMarksSheetTemplate({
+        title: `${std.name} परीक्षा ${std.academic_year}`,
+        students: rows.map((r) => ({ division: divNameById.get(r.division_id) ?? "", roll_no: r.roll_no, name: r.student_name })),
+      });
+      XLSX.writeFile(wb, `marks-${std.name}-${std.academic_year}.xlsx`.replace(/\s+/g, "-"));
+      if (rows.length === 0) toast.info("No students in this class yet — the sheet is blank");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onFile(file: File) {
     if (!standardId) { toast.error("Select a standard first"); return; }
@@ -189,6 +222,7 @@ export default function UploadWizard({
         fallback_division_id: fallbackDivisionId,
         test_type: parsed.test_type ?? "",
         academic_year: parsed.academic_year ?? std?.academic_year ?? "",
+        exam_date: "",
         resolved,
         rostersByDivision,
       });
@@ -227,9 +261,15 @@ export default function UploadWizard({
               {busy ? "Reading file…" : "Click to choose file"}
             </div>
             <div className="mt-1 text-xs text-ink-500">
-              .xlsx / .xls / .csv — one student, N stacked, or one sheet per student.
+              .xlsx / .xls / .csv — a class marks sheet (one row per student), or report-card blocks.
             </div>
           </label>
+          <div className="mt-4 flex flex-col gap-2 rounded-md bg-ink-50 p-3 text-xs text-ink-600 sm:flex-row sm:items-center sm:justify-between">
+            <span>Fastest: download this class&apos;s marks sheet with every student already listed, type the marks, upload it here.</span>
+            <Button size="sm" variant="secondary" leftIcon={<Download className="h-4 w-4" />} onClick={downloadMarksSheet} disabled={busy || !standardId}>
+              Download marks sheet
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -271,6 +311,14 @@ export default function UploadWizard({
 
   const divisionsForStd = divisionsOfStandard(s.standard_id);
 
+  // Big classes: show only the students that need a decision, unless asked.
+  const needsAttention = s.resolved
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => !(r.mode === "existing" && r.chosen_id && r.match.status === "matched") || r.raw.warnings.length > 0)
+    .map(({ i }) => i);
+  const visible = s.resolved.length > 30 && !showAll ? needsAttention : s.resolved.map((_, i) => i);
+  const missingDates = s.resolved.filter((r) => r.mode !== "skip" && !r.raw.subjects.some((x) => x.date)).length;
+
   function buildSubjectIndex(group: ResolvedStudent[]) {
     const seen = new Map<string, { subject_name: string; paper_no: number | null; max_marks: number | null; paper_date: string | null }>();
     for (const r of group) {
@@ -298,9 +346,11 @@ export default function UploadWizard({
       const divisionId = r.division_id ?? s.fallback_division_id;
       const testType = (r.raw.test_type ?? "").trim() || s.test_type.trim();
       const dates = r.raw.subjects.map((sub) => sub.date);
-      const { start, end } = dateRange(dates);
+      const range = dateRange(dates);
+      const start = range.start ?? (s.exam_date || null);
+      const end = range.end ?? (s.exam_date || null);
       if (!testType) throw new Error(`Missing test type for "${r.raw.raw_student_name}"`);
-      if (!start || !end) throw new Error(`Missing paper dates for "${r.raw.raw_student_name}" — can't identify exam`);
+      if (!start || !end) throw new Error(`No exam date for "${r.raw.raw_student_name}" — enter the Exam date at the top`);
       const key = `${divisionId}::${testType}::${start}`;
       const existing = map.get(key);
       if (existing) {
@@ -483,7 +533,12 @@ export default function UploadWizard({
           <span className="font-medium text-ink-500">Academic year</span>
           <Input value={s.academic_year} onChange={(e) => setStep({ ...s, academic_year: e.target.value })} />
         </label>
-        <div className="col-span-2 flex flex-col justify-end text-sm">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium text-ink-500">Exam date{missingDates ? " *" : " (fallback)"}</span>
+          <Input type="date" value={s.exam_date} onChange={(e) => setStep({ ...s, exam_date: e.target.value })} />
+          <span className="text-[10px] text-ink-400">{missingDates ? `${missingDates} students have no paper dates in the file.` : "Only used when the file has no dates."}</span>
+        </label>
+        <div className="flex flex-col justify-end text-sm">
           <div className="text-ink-500">Detected: <b>{s.resolved.length}</b> student blocks</div>
           <div className="text-ink-500">
             <span className="text-green-700">{stats.matched} matched</span>
@@ -494,13 +549,31 @@ export default function UploadWizard({
       </div>
 
       {s.file.warnings.length > 0 && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="max-h-48 overflow-y-auto rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="mb-1 font-semibold">{s.file.warnings.length} thing{s.file.warnings.length === 1 ? "" : "s"} to double-check</div>
           {s.file.warnings.map((w, i) => <div key={i}>⚠ {w}</div>)}
         </div>
       )}
 
+      {s.resolved.length > 30 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-ink-600">Show:</span>
+          <Button size="sm" variant={showAll ? "secondary" : "primary"} onClick={() => setShowAll(false)}>
+            Needs attention ({needsAttention.length})
+          </Button>
+          <Button size="sm" variant={showAll ? "primary" : "secondary"} onClick={() => setShowAll(true)}>
+            All {s.resolved.length}
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {s.resolved.map((r, idx) => (
+        {visible.length === 0 && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            All {s.resolved.length} students matched by division and roll number — nothing to check. Save below.
+          </div>
+        )}
+        {visible.map((idx) => { const r = s.resolved[idx]; return (
           <StudentCard
             key={idx}
             resolved={r}
@@ -512,7 +585,7 @@ export default function UploadWizard({
               setResolved(list);
             }}
           />
-        ))}
+        ); })}
       </div>
 
       <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-2 border-t border-ink-200 bg-white/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:mx-0">

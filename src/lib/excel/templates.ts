@@ -213,10 +213,119 @@ export function competitiveResultsTemplate() {
   return wb;
 }
 
+// ------------------------------------------------------------
+// 6. Whole-school students roster (every class + division in one file)
+// ------------------------------------------------------------
+export function schoolRosterTemplate() {
+  const head = ["Class", "Division", "roll_no", "student_name", "parent_mobile", "dob", "gender"];
+  const rows: unknown[][] = [head];
+  for (let i = 0; i < 500; i++) rows.push(head.map(() => ""));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 8 }, { wch: 9 }, { wch: 8 }, { wch: 32 }, { wch: 15 }, { wch: 12 }, { wch: 8 }];
+
+  const notes = XLSX.utils.aoa_to_sheet([
+    ["Whole-school roster — how to fill"],
+    [""],
+    ["Column", "Required?", "Notes"],
+    ["Class", "Required", "1–12 in any form: 1st, 10th, १० वी, Std 10, SSC, HSC."],
+    ["Division", "Required", "A–G or अ–ग (A = अ, B = ब …). Semi / English medium also work."],
+    ["roll_no", "Required", "Whole number, unique inside its class + division."],
+    ["student_name", "Required", "Marathi / English — both OK."],
+    ["parent_mobile", "Required", "10-digit mobile. +91, spaces or a leading 0 are fine."],
+    ["dob", "Required", "DD/MM/YYYY (14/05/2010), 14.05.2010, 2010-05-14 or an Excel date."],
+    ["gender", "Optional", "M / F / Other (मुलगा / मुलगी also work)."],
+    [""],
+    ["Sample rows:"],
+    head,
+    ["1st", "A", 1, "Asha Patil", "9876543210", "14/05/2019", "F"],
+    ["10th", "ब", 12, "कु. भालेराव साक्षी संदीप", "9822014571", "05/09/2011", "F"],
+    [""],
+    ["Behaviour:"],
+    ["• Upload at: Students → Import Excel. You pick the academic year on the review screen."],
+    ["• Classes and divisions that don't exist yet for that year are created for you."],
+    ["• Re-uploading is safe — same class + division + roll no updates the student, new ones are added."],
+    ["• Need more rows? Just keep typing below — there's no limit (5000+ students is fine)."],
+    ["• Every problem row is listed before anything is saved."],
+  ]);
+  notes["!cols"] = [{ wch: 16 }, { wch: 12 }, { wch: 80 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Students");
+  XLSX.utils.book_append_sheet(wb, notes, "How to fill");
+  return wb;
+}
+
+// ------------------------------------------------------------
+// 7. Class marks sheet — one row per student, one column per subject,
+//    every division of a class in one sheet.
+// ------------------------------------------------------------
+export type MarksSheetStudent = { division: string; roll_no: number; name: string };
+
+const DEFAULT_SUBJECTS = ["मराठी", "हिंदी", "इंग्रजी", "गणित", "विज्ञान", "सामाजिक शास्त्रे"];
+
+/** Blank, or pre-filled with a class's students (Results → Upload → "Download marks sheet"). */
+export function classMarksSheetTemplate(opts: {
+  title?: string;
+  subjects?: string[];
+  students?: MarksSheetStudent[];
+} = {}) {
+  const subjects = opts.subjects?.length ? opts.subjects : DEFAULT_SUBJECTS;
+  const blank = subjects.map(() => "");
+  const rows: unknown[][] = [
+    [opts.title ?? "10 वी आठवडी परीक्षा 2026-27"],
+    ["परीक्षा दिनांक / Exam date :", ""],
+    ["तुकडी / Division", "हजेरी क्र. / Roll No", "विद्यार्थ्याचे नाव / Student Name", ...subjects],
+    ["पैकी गुण / Out of", "", "", ...subjects.map(() => 100)],
+    ["दिनांक / Paper date", "", "", ...blank],
+  ];
+  if (opts.students?.length) {
+    for (const st of opts.students) rows.push([st.division, st.roll_no, st.name, ...blank]);
+  } else {
+    for (let i = 0; i < 100; i++) rows.push(["", "", "", ...blank]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 14 }, { wch: 12 }, { wch: 34 }, ...subjects.map(() => ({ wch: 11 }))];
+  ws["!freeze"] = { xSplit: 3, ySplit: 5 };
+
+  const notes = XLSX.utils.aoa_to_sheet([
+    ["Class marks sheet — how to fill"],
+    [""],
+    ["Row 1", "Title: <Class> <Test name> <Academic year>, e.g. 10 वी प्रथम सत्र परीक्षा 2026-27."],
+    ["Row 2", "Exam date (DD/MM/YYYY) — used for every paper unless row 5 gives a paper its own date."],
+    ["Row 3", "Headings. Rename, add or delete subject columns freely (keep Division, Roll No and Name)."],
+    ["Row 4", "Out of — maximum marks for each subject. “Marathi (40)” in the heading also works."],
+    ["Row 5", "Paper date — optional, one per subject."],
+    ["Row 6+", "One row per student. All divisions of the class can be in this one sheet."],
+    [""],
+    ["Marks", "Numbers, Marathi digits, 12½, or 26/40. AB / Absent / गैरहजर / - for absent."],
+    ["Ignored", "Sr No, GR, Total, %, Result, Grade, Rank and Remarks columns are skipped automatically."],
+    [""],
+    ["Upload at: Results → Upload, choosing the class. Each student is matched by division + roll no."],
+  ]);
+  notes["!cols"] = [{ wch: 10 }, { wch: 100 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Marks");
+  XLSX.utils.book_append_sheet(wb, notes, "How to fill");
+  return wb;
+}
+
 export const TEMPLATES = [
   {
-    title: "Students roster",
-    description: "Bulk-add students. Columns: roll_no, student_name, parent_mobile, dob, gender.",
+    title: "Whole-school roster",
+    description: "Every class and division in one file — Class, Division, roll_no, student_name, parent_mobile, dob, gender.",
+    filename: "whole-school-roster.xlsx",
+    build: schoolRosterTemplate,
+  },
+  {
+    title: "Class marks sheet",
+    description: "One row per student, one column per subject — all divisions of a class in one sheet. The fastest way to enter results.",
+    filename: "class-marks-sheet.xlsx",
+    build: () => classMarksSheetTemplate(),
+  },
+  {
+    title: "Students roster (one division)",
+    description: "Bulk-add students to one division. Columns: roll_no, student_name, parent_mobile, dob, gender.",
     filename: "students-roster.xlsx",
     build: studentsRosterTemplate,
   },
