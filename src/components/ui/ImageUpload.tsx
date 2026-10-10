@@ -2,17 +2,17 @@
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ImagePlus, Trash2, RefreshCw } from "lucide-react";
+import { Crop, ImagePlus, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { IconButton } from "./IconButton";
+import { ImageEditor, aspectForFrame } from "./ImageEditor";
 
 /**
- * Photo picker used across the CMS. Handles the browser side of the upload
- * (client-side resize down to a sensible max dimension, jpeg re-encode) then
- * hands the resulting blob to `onUpload`, which is a server action passed by
- * the caller. The server action returns a `{ url }` — this component swaps
- * to preview mode.
+ * Photo picker used across the CMS. A picked photo opens in the crop /
+ * adjust editor first (and an uploaded one can be re-edited); the editor's
+ * output — already sized to `maxDimension` and JPEG-encoded — goes to
+ * `onUpload`, a server action passed by the caller that returns `{ url }`.
  *
  * Why resize on the client:
  *   Parents / admins upload from phone cameras that shoot 10 MP+. Sending
@@ -31,6 +31,8 @@ export function ImageUpload({
   aspect = "wide",
   maxDimension = 1600,
   className,
+  mediaClassName,
+  mediaStyle,
 }: {
   /** Current image URL, if any. */
   value: string | null;
@@ -40,46 +42,53 @@ export function ImageUpload({
   onUpload: UploadFn;
   label?: ReactNode;
   hint?: ReactNode;
-  /** Frame shape hint for the preview. Doesn't affect the actual image. */
+  /** Frame shape of the preview; also the editor's starting crop shape. */
   aspect?: "wide" | "square" | "portrait";
   /** Max width AND height in pixels — image is scaled to fit. */
   maxDimension?: number;
   className?: string;
+  /** Extra class / style on the shown photo — e.g. to play a camera move on it. */
+  mediaClassName?: string;
+  mediaStyle?: React.CSSProperties;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState<File | string | null>(null);
 
   const frame =
     aspect === "square" ? "aspect-square"
     : aspect === "portrait" ? "aspect-3/4"
     : "aspect-16/9";
 
-  async function resizeAndUpload(file: File) {
+  function pick(file: File) {
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file");
       return;
     }
+    setEditing(file);
+  }
+
+  // Called by the editor with the cropped, adjusted JPEG.
+  async function upload(blob: Blob) {
     setBusy(true);
-    try {
-      const resized = await resizeImage(file, maxDimension);
-      const fd = new FormData();
-      fd.set("file", resized, file.name.replace(/\.[^.]+$/, ".jpg"));
+    const fd = new FormData();
+    fd.set("file", blob, "photo.jpg");
+    await new Promise<void>((done) => {
       startTransition(async () => {
         try {
           const { url } = await onUpload(fd);
           onChange(url);
-          toast.success("Photo uploaded");
+          setEditing(null);
+          toast.success("Photo saved");
         } catch (err) {
           toast.error((err as Error).message || "Upload failed");
         } finally {
           setBusy(false);
+          done();
         }
       });
-    } catch (err) {
-      setBusy(false);
-      toast.error((err as Error).message || "Could not process image");
-    }
+    });
   }
 
   const disabled = busy || pending;
@@ -96,7 +105,7 @@ export function ImageUpload({
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) resizeAndUpload(f);
+          if (f) pick(f);
           e.target.value = ""; // let the same file be picked again after clear
         }}
       />
@@ -104,8 +113,18 @@ export function ImageUpload({
       {value ? (
         <div className={cn("group relative w-full overflow-hidden rounded-lg border border-ink-200 bg-ink-50", frame)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="h-full w-full object-cover" />
+          <img src={value} alt=""
+            className={cn("h-full w-full object-cover", mediaClassName)} style={mediaStyle} />
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-linear-to-t from-black/50 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+            <IconButton
+              tone="gray"
+              label="Crop & adjust"
+              className="!bg-white/90 hover:!bg-white"
+              onClick={() => setEditing(value)}
+              disabled={disabled}
+            >
+              <Crop className="h-4 w-4" />
+            </IconButton>
             <IconButton
               tone="gray"
               label="Replace"
@@ -147,12 +166,22 @@ export function ImageUpload({
           <div className="text-sm font-medium text-ink-700">
             {disabled ? "Uploading…" : "Choose photo"}
           </div>
-          <div className="text-xs text-ink-500">Max {maxDimension}px, auto-compressed</div>
+          <div className="text-xs text-ink-500">You can crop and adjust it next</div>
         </button>
       )}
 
       {value && (
         <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditing(value)}
+            disabled={disabled}
+            leftIcon={<Crop className="h-3.5 w-3.5" />}
+          >
+            Crop & adjust
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -164,6 +193,16 @@ export function ImageUpload({
             Replace
           </Button>
         </div>
+      )}
+
+      {editing && (
+        <ImageEditor
+          source={editing}
+          initialAspect={aspectForFrame(aspect)}
+          maxDimension={maxDimension}
+          onCancel={() => { if (!busy) setEditing(null); }}
+          onDone={upload}
+        />
       )}
     </div>
   );
@@ -177,7 +216,7 @@ export function ImageUpload({
  * at quality 0.85. Returns a Blob wearing `image/jpeg`. Skips resizing when
  * the image is already smaller than the cap — no point re-encoding.
  */
-async function resizeImage(file: File, maxDimension: number): Promise<Blob> {
+export async function resizeImage(file: File, maxDimension: number): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   try {
     const { width, height } = bitmap;

@@ -46,7 +46,9 @@
   --color-ink-900: #0f172a;
 
   /* Fonts ---------------------------------------------------------------- */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Devanagari follows Inter so Marathi names on English pages still get
+     Noto rather than the OS fallback. */
+  --font-sans: var(--font-inter), var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-devanagari: var(--font-devanagari), var(--font-inter), sans-serif;
 }
@@ -111,6 +113,47 @@ body {
 @keyframes slideUpFade   { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes shimmer       { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
 @keyframes marquee       { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+/* ----------------------------------------------------------------------------
+ * Hero camera moves. Each runs once over the slide's time (set inline as
+ * animation-duration). The drone moves combine scale, drift and a slight
+ * turn so a still photo reads like aerial footage circling the building.
+ * ------------------------------------------------------------------------- */
+@keyframes fxZoomIn   { from { transform: scale(1); }    to { transform: scale(1.12); } }
+@keyframes fxZoomOut  { from { transform: scale(1.18); } to { transform: scale(1); } }
+@keyframes fxDrone {
+  0%   { transform: scale(1.22) translate3d(-4%,  2%, 0) rotate(-2.2deg); }
+  50%  { transform: scale(1.16) translate3d( 0%, -1%, 0) rotate( 0deg); }
+  100% { transform: scale(1.22) translate3d( 4%,  1%, 0) rotate( 2.2deg); }
+}
+@keyframes fxDroneRise {
+  from { transform: scale(1.3) translate3d(0,  6%, 0) rotate(-1deg); }
+  to   { transform: scale(1.06) translate3d(0, -2%, 0) rotate(0.5deg); }
+}
+@keyframes fxPanLeft  { from { transform: scale(1.15) translate3d( 5%, 0, 0); } to { transform: scale(1.15) translate3d(-5%, 0, 0); } }
+@keyframes fxPanRight { from { transform: scale(1.15) translate3d(-5%, 0, 0); } to { transform: scale(1.15) translate3d( 5%, 0, 0); } }
+
+.fx-zoom-in    { animation: fxZoomIn    7s ease-out    both; }
+.fx-zoom-out   { animation: fxZoomOut   7s ease-out    both; }
+.fx-drone      { animation: fxDrone     7s ease-in-out both; }
+.fx-drone-rise { animation: fxDroneRise 7s cubic-bezier(0.25, 0.1, 0.25, 1) both; }
+.fx-pan-left   { animation: fxPanLeft   7s ease-in-out both; }
+.fx-pan-right  { animation: fxPanRight  7s ease-in-out both; }
+.fx-zoom-in, .fx-zoom-out, .fx-drone, .fx-drone-rise, .fx-pan-left, .fx-pan-right {
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+
+/* Admin effect picker: each tile previews its move while hovered/focused. */
+.fx-prev { animation: none 2.5s ease-in-out infinite alternate; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="zoom-in"]    { animation-name: fxZoomIn; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="zoom-out"]   { animation-name: fxZoomOut; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="drone"]      { animation-name: fxDrone; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="drone-rise"] { animation-name: fxDroneRise; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="pan-left"]   { animation-name: fxPanLeft; }
+.group:is(:hover, :focus-visible) .fx-prev[data-fx="pan-right"]  { animation-name: fxPanRight; }
+/* Hero slide timer: the active dot fills over the slide's time. */
+@keyframes slideProgress { from { width: 0%; } to { width: 100%; } }
+.slide-progress { animation: slideProgress linear both; }
 
 .animate-in           { animation-duration: 200ms; animation-fill-mode: both; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
 .fade-in              { animation-name: fadeIn; }
@@ -133,6 +176,47 @@ body {
 }
 .marquee:hover {
   animation-play-state: paused;
+}
+
+/* ============================================================================
+ * Page-builder spacing. Every public section uses .sec (space above/below)
+ * and .sec-wrap (width + side margins). The admin's per-section spacing
+ * settings set the --sec-* variables on a wrapper; without them these
+ * fall back to the site's normal rhythm.
+ * ========================================================================= */
+.sec {
+  padding-top: var(--sec-pt, clamp(5rem, 8vw, 7rem));
+  padding-bottom: var(--sec-pb, clamp(5rem, 8vw, 7rem));
+}
+.sec-wrap {
+  width: 100%;
+  margin-inline: auto;
+  max-width: var(--sec-maxw, 80rem);
+  padding-inline: var(--sec-px, clamp(1rem, 3vw, 2rem));
+}
+/* Sections whose natural width is narrower (statement, closing band). */
+.sec-wrap-5xl { max-width: var(--sec-maxw, 64rem); }
+
+/* ---- Section backgrounds (Design panel). The wrapper carries data-bg and
+   data-tone; its <section> child gets the new background, and the section's
+   own decorative layers step aside. ---------------------------------------- */
+[data-bg]:not([data-bg="default"]) > section { background: var(--sec-bg) !important; }
+[data-bg]:not([data-bg="default"]) > section .sec-backdrop { display: none; }
+[data-bg="white"]      { --sec-bg: #fff; }
+[data-bg="soft"]       { --sec-bg: var(--color-ink-100); }
+[data-bg="brand-soft"] { --sec-bg: var(--color-brand-50); }
+[data-bg="warm"]       { --sec-bg: var(--color-accent-50); }
+[data-bg="ink"]        { --sec-bg: var(--color-ink-900); }
+[data-bg="brand"]      { --sec-bg: var(--color-brand-800); }
+[data-bg="deep"]       { --sec-bg: var(--color-brand-950); }
+/* Background photo, tinted to match the section's text colour. */
+[data-bg="image"][data-tone="light"] {
+  --sec-bg: linear-gradient(rgb(255 255 255 / var(--sec-bg-a, 0.6)), rgb(255 255 255 / var(--sec-bg-a, 0.6))),
+            var(--sec-bg-image) center / cover no-repeat;
+}
+[data-bg="image"][data-tone="dark"] {
+  --sec-bg: linear-gradient(rgb(15 23 42 / var(--sec-bg-a, 0.6)), rgb(15 23 42 / var(--sec-bg-a, 0.6))),
+            var(--sec-bg-image) center / cover no-repeat;
 }
 
 /* ============================================================================
@@ -202,4 +286,15 @@ body {
     transition-duration: 0.001ms !important;
   }
   .marquee { animation: none; }
+}
+
+/* The global reduced-motion rule above cuts every animation to ~0ms. The
+   hero's camera moves are slow and were explicitly wanted by the school, so
+   they are kept — as a softer, shorter-travel version. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-zoom-in, .fx-zoom-out, .fx-drone, .fx-drone-rise, .fx-pan-left, .fx-pan-right {
+    animation-name: fxZoomIn !important;
+    animation-duration: 12s !important;
+    animation-iteration-count: 1 !important;
+  }
 }

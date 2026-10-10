@@ -1,41 +1,35 @@
 import type { MetadataRoute } from "next";
+import { getSchoolInfo } from "@/lib/school";
+import { BRAND_PRESETS } from "@/lib/theme";
 
 /**
- * Web app manifest — makes /lookup installable as a home-screen app on Android
- * and iOS. Kept minimal on purpose: no service worker (offline is a separate
- * concern with a Supabase-backed app), no icon paths that don't exist, no
- * splash screens. Every field here is one the browser actually reads.
+ * Web app manifest — lets parents add the school site to their home screen.
+ * Name and colour come from Settings; the icon is the uploaded logo, or a
+ * monogram in the brand colour until one is uploaded.
  */
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const school = await getSchoolInfo();
+  const name = school.name || "Saraswati Vidyalaya, Vasind";
+  const brand = (BRAND_PRESETS.find((b) => b.key === school.theme.brand) ?? BRAND_PRESETS[0]).scale["700"];
+  const initial = name.trim().charAt(0).toUpperCase() || "S";
   return {
-    name: "Saraswati Portal",
-    short_name: "Saraswati",
-    description: "School results and report cards for parents and admins.",
-    start_url: "/lookup",
+    name,
+    short_name: name.split(",")[0].slice(0, 24),
+    description: "Results, notices, events and achievements.",
+    start_url: "/",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
-    background_color: "#f9fafb",
-    theme_color: "#4f46e5",
-    // Icons: an inline SVG monogram works on every browser and needs no file.
-    // Replace with a raster PNG when the school ships their own artwork.
-    icons: [
-      {
-        src:
-          "data:image/svg+xml;utf8," +
-          encodeURIComponent(
-            `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
-              <rect width='512' height='512' rx='96' fill='#4f46e5'/>
-              <text x='50%' y='50%' text-anchor='middle' dominant-baseline='central'
-                    font-family='system-ui,-apple-system,Segoe UI,sans-serif'
-                    font-weight='700' font-size='260' fill='#ffffff'>S</text>
-            </svg>`,
-          ),
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "any",
-      },
-    ],
-    categories: ["education"],
+    background_color: "#ffffff",
+    theme_color: brand,
+    icons: school.logo_url
+      ? [{ src: school.logo_url, sizes: "any", purpose: "any" }]
+      : [{
+          src: "data:image/svg+xml;utf8," + encodeURIComponent(
+            `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='${brand}'/>` +
+            `<text x='50%' y='50%' text-anchor='middle' dominant-baseline='central' font-family='system-ui,sans-serif' font-size='280' font-weight='700' fill='white'>${initial}</text></svg>`),
+          sizes: "any",
+          type: "image/svg+xml",
+          purpose: "any",
+        }],
   };
 }

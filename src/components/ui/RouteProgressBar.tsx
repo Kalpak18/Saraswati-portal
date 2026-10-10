@@ -53,7 +53,9 @@ export function RouteProgressBar() {
   // Complete when the route actually changes.
   useEffect(() => {
     if (!visible) return;
-    done();
+    // Next frame: finish the bar once the new route has painted.
+    const id = requestAnimationFrame(done);
+    return () => cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams?.toString()]);
 

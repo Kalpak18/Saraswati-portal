@@ -1,88 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { Trophy, Music, Dumbbell, GraduationCap, ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
-import { SectionHeader } from "../components/SectionHeader";
+import { toMarathiDigits } from "@/lib/i18n/normalize";
+import { layoutOf, pick, type HomeSection } from "@/lib/homeSections";
+import { AchievementCard } from "../components/AchievementCard";
+import { BannerGallery } from "../components/BannerGallery";
+import { Reveal } from "../components/motion";
+import { useSectionDesign } from "../components/SectionDesign";
+import { TITLE_SIZE } from "../components/SectionHeader";
+import { cn } from "@/lib/utils";
+import { ItemLayout } from "../components/ItemLayout";
+import type { PublicAchievement } from "../lib/showcase";
 
-type Achievement = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  achieved_on: string | null;
-  photo_url: string | null;
-};
-
-const CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  academic: GraduationCap,
-  sports: Dumbbell,
-  cultural: Music,
-  other: Trophy,
-};
-
-const CATEGORY_TONE: Record<string, string> = {
-  academic: "bg-brand-50 text-brand-700 ring-brand-200",
-  sports:   "bg-accent-50 text-accent-700 ring-accent-200",
-  cultural: "bg-purple-50 text-purple-700 ring-purple-200",
-  other:    "bg-ink-100 text-ink-700 ring-ink-200",
-};
-
-export default function HomeAchievements({ achievements }: { achievements: Achievement[] }) {
+/**
+ * Competitive-exam results. Cards are made automatically from imported
+ * results (filtered by the section's exam / category / level); the admin
+ * can instead — or as well — show their own ready-made banners.
+ * The grid sizes itself to the number of cards.
+ */
+export default function HomeAchievements({
+  s, achievements, matching, stats,
+}: {
+  s: HomeSection;
+  achievements: PublicAchievement[];   // already filtered + limited for this section
+  matching: number;                    // how many match the filter in total
+  stats: { total: number; statePlus: number; exams: number };
+}) {
   const { lang } = useLang();
+  const design = useSectionDesign();
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
+  const num = (n: number) => (lang === "mr" ? toMarathiDigits(n.toLocaleString("en-IN")) : n.toLocaleString("en-IN"));
 
-  const rows = achievements.slice(0, 6);
+  const display = s.config.display ?? "cards";
+  const showBanners = display !== "cards" && s.items.some((i) => i.image_url);
+  const showCards = display !== "banners" && achievements.length > 0;
+  // A section scoped to one exam shouldn't show whole-school totals.
+  const scoped = !!(s.config.exam || s.config.category || s.config.min_level);
+  if (!showBanners && !showCards) return null;
+
+  const tiles = scoped ? [] : [
+    { value: stats.total, label: t("एकूण यश", "Achievements") },
+    { value: stats.statePlus, label: t("राज्यस्तर व त्याहून अधिक", "State level & above") },
+    { value: stats.exams, label: t("स्पर्धा परीक्षा व उपक्रम", "Exams & competitions") },
+  ].filter((x) => x.value > 0);
+
+  const eyebrow = pick(s.content.eyebrow, lang);
+  const title = pick(s.content.title, lang);
+  const subtitle = pick(s.content.subtitle, lang);
+  const seeAllHref = s.config.exam ? `/achievements?exam=${encodeURIComponent(s.config.exam)}` : "/achievements";
 
   return (
-    <section className="py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <SectionHeader
-          eyebrow={t("कर्तृत्व", "Standing out")}
-          title={t("यशोगाथा", "Recent achievements")}
-          subtitle={t(
-            "शैक्षणिक, क्रीडा आणि सांस्कृतिक क्षेत्रांतील आमच्या विद्यार्थ्यांची कामगिरी.",
-            "Academic, sports and cultural highlights from around the school.",
-          )}
-          action={{ href: "/academics/toppers", label: t("अधिक पहा", "See more") }}
-        />
+    <section className="relative overflow-hidden bg-ink-900 text-white sec">
+      {/* Soft light + dotted texture so the dark band reads as a feature, not a void */}
+      <div className="sec-backdrop pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="absolute -top-32 left-1/4 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" />
+        <div className="absolute -bottom-32 right-1/4 h-96 w-96 rounded-full bg-accent-500/15 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.06)_1px,transparent_0)] bg-size-[22px_22px]" />
+      </div>
 
-        {rows.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-ink-200 bg-white p-14 text-center">
-            <Trophy className="mx-auto h-10 w-10 text-ink-300" />
-            <p className="mt-4 font-display text-lg font-semibold text-ink-900">
-              {t("यशोगाथा लवकरच", "Achievements coming soon")}
-            </p>
+      <div className="relative sec-wrap">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <Reveal className={cn("max-w-2xl", design.headingAlign === "center" && "mx-auto text-center lg:mx-0")}>
+            {eyebrow && (
+              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-accent-300">
+                <span className="h-px w-6 bg-current" />
+                {eyebrow}
+              </div>
+            )}
+            {title && (
+              <h2 className={cn("mt-3 font-display font-semibold leading-tight tracking-tight", TITLE_SIZE[design.headingSize ?? "md"])}>{title}</h2>
+            )}
+            {subtitle && <p className="mt-3 text-base text-ink-300">{subtitle}</p>}
+          </Reveal>
+
+          {tiles.length > 0 && showCards && (
+            <Reveal from="right" delay={150}>
+              <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+                {tiles.map((x) => (
+                  <div key={x.label} className="rounded-2xl bg-white/5 px-4 py-3 ring-1 ring-white/10 backdrop-blur sm:px-5 sm:py-4">
+                    <dt className="text-[10px] font-medium uppercase tracking-wider text-ink-400 sm:text-[11px]">{x.label}</dt>
+                    <dd className="mt-1 font-display text-2xl font-semibold tabular-nums text-accent-300 sm:text-3xl">{num(x.value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Reveal>
+          )}
+        </div>
+
+        {showBanners && (
+          <div className="mt-12">
+            <BannerGallery items={s.items} frame={{ shape: s.config.photo_shape, fit: s.config.photo_fit }} tone="dark" />
           </div>
-        ) : (
-          <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {rows.map((a) => {
-              const Icon = CATEGORY_ICON[a.category] ?? Trophy;
-              const tone = CATEGORY_TONE[a.category] ?? CATEGORY_TONE.other;
-              return (
-                <article
-                  key={a.id}
-                  className="group relative flex items-start gap-4 overflow-hidden rounded-2xl border border-ink-100 bg-white p-6 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                >
-                  <div className={`flex h-11 w-11 flex-none items-center justify-center rounded-xl ring-1 ${tone}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-ink-500">
-                      <span>{a.category}</span>
-                      {a.achieved_on && <span className="tabular-nums">· {a.achieved_on}</span>}
-                    </div>
-                    <h3 className="mt-1 line-clamp-2 font-display text-base font-semibold text-ink-900">
-                      {a.title}
-                    </h3>
-                    {a.description && (
-                      <p className="mt-1.5 line-clamp-2 text-sm text-ink-600">{a.description}</p>
-                    )}
-                  </div>
-                  <ArrowUpRight className="absolute right-4 top-4 h-4 w-4 flex-none text-ink-300 opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0.5" />
-                </article>
-              );
-            })}
+        )}
+
+        {showCards && (
+          <ItemLayout layout={layoutOf(s) as "grid" | "carousel"} columns={s.config.columns} gap="1rem" className="mt-12 text-ink-900">
+            {achievements.map((a) => <AchievementCard key={a.id} a={a} />)}
+          </ItemLayout>
+        )}
+
+        {showCards && (
+          <div className="mt-10 flex justify-center">
+            <Link
+              href={seeAllHref}
+              className="group inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-lg transition-all hover:-translate-y-0.5 hover:bg-accent-50"
+            >
+              {matching > achievements.length
+                ? t(`सर्व ${toMarathiDigits(String(matching))} पहा`, `See all ${matching}`)
+                : t("सर्व यश पहा", "See all achievements")}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
         )}
       </div>

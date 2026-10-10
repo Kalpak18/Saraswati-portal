@@ -1,4 +1,4 @@
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { getSchoolInfo } from "@/lib/school";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
@@ -8,22 +8,11 @@ import { PublicFooter } from "@/components/public/PublicFooter";
  * have to re-query.
  */
 export default async function PublicLayout(props: LayoutProps<"/">) {
-  const supabase = await createSupabaseServer();
-  const { data: school } = await supabase
-    .from("school_settings")
-    .select("name, address, logo_url")
-    .limit(1)
-    .maybeSingle();
-
-  const s = {
-    name: school?.name ?? null,
-    address: school?.address ?? null,
-    logo_url: school?.logo_url ?? null,
-  };
+  const s = await getSchoolInfo();
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <PublicHeader school={{ name: s.name, logo_url: s.logo_url }} />
+      <PublicHeader school={{ name: s.name, name_mr: s.name_mr, logo_url: s.logo_url, branding: s.branding }} />
       <main className="flex-1">{props.children}</main>
       <PublicFooter school={s} />
     </div>

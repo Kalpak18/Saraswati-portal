@@ -1,7 +1,9 @@
 import * as XLSX from "xlsx";
+import { toISODate } from "@/lib/excel/dates";
+import { classify as classifyRosterHeader } from "@/lib/excel/parseStudents";
 import {
   splitLabelValue, isRollLabel, isDivisionLabel, isStandardLabel, isGRLabel,
-  normalizeDivision, normalizeStandard, parseNum,
+  normalizeDivision, normalizeStandard, parseNum, toArabicDigits,
 } from "@/lib/i18n/normalize";
 
 // ============================================================
@@ -141,35 +143,34 @@ function detectColumns(row: unknown[]): ColMap | null {
 // Cell helpers
 // ============================================================
 function toNumber(v: unknown): number | null {
-  if (v == null || v === "") return null;
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  const s = String(v).trim().replace(/[^\d.\-]/g, "");
-  if (!s) return null;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
+  return readMark(v).value;
 }
 
-function toDateISO(v: unknown): string | null {
-  if (v == null || v === "") return null;
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
-  if (typeof v === "number") {
-    const d = XLSX.SSF.parse_date_code(v);
-    if (!d) return null;
-    return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
-  }
-  const s = String(v).trim();
-  // ISO already
-  const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
-  // dd-mm-yyyy or dd/mm/yyyy
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
-  if (dmy) {
-    let y = dmy[3];
-    if (y.length === 2) y = "20" + y;
-    return `${y}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-  }
-  return null;
+// Absent / not-applicable markers teachers type in a marks cell.
+const ABSENT = /^(ab|abs|absent|a|-+|—|na|n\/a|गैरहजर|ग\.?\s*ह\.?|अनुपस्थित|गैर)$/i;
+
+/**
+ * A marks cell → number, tolerating real-world entry:
+ *   २६ (Marathi digits) · 12½ · 12.5 · "26/40" (marks/max in one cell) ·
+ *   AB / Absent / गैरहजर / "-" (absent → blank).
+ * Anything else that isn't a number is reported, never silently guessed.
+ */
+export function readMark(v: unknown): { value: number | null; max?: number; absent?: boolean; unreadable?: string } {
+  if (v == null || v === "") return { value: null };
+  if (typeof v === "number") return { value: Number.isFinite(v) ? v : null };
+  const raw = String(v).trim();
+  if (!raw) return { value: null };
+  if (ABSENT.test(raw)) return { value: null, absent: true };
+  const s = toArabicDigits(raw).replace(/½/g, ".5").replace(/¼/g, ".25").replace(/¾/g, ".75").replace(/\s+/g, "");
+  const frac = s.match(/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);          // "26/40"
+  if (frac) return { value: Number(frac[1]), max: Number(frac[2]) };
+  const num = s.match(/^-?\d+(?:\.\d+)?/);
+  if (num && /^-?\d+(?:\.\d+)?(marks?|गुण)?$/i.test(s)) return { value: Number(num[0]) };
+  return { value: null, unreadable: raw };
 }
+
+// Dates go through the shared reader (no UTC shift, Indian day-first order).
+export const toDateISO = toISODate;
 
 function isBlankRow(row: unknown[]): boolean {
   return row.every((c) => c == null || String(c).trim() === "");
@@ -279,8 +280,13 @@ function parseStudentBlock(
 
     const paper_no = colMap.paper !== undefined ? (toNumber(row[colMap.paper]) ?? null) : null;
     const date = colMap.date !== undefined ? toDateISO(row[colMap.date]) : null;
-    const obtained = colMap.obtained !== undefined ? toNumber(row[colMap.obtained]) : null;
-    const max = colMap.max !== undefined ? toNumber(row[colMap.max]) : null;
+    const mark = colMap.obtained !== undefined ? readMark(row[colMap.obtained]) : { value: null };
+    const obtained = mark.value;
+    // "26/40" in the marks cell also gives the max when the max column is empty.
+    const max = (colMap.max !== undefined ? toNumber(row[colMap.max]) : null) ?? mark.max ?? null;
+    if (mark.unreadable) warnings.push(`${subject}: marks “${mark.unreadable}” isn't a number — left blank`);
+    if (obtained != null && max != null && obtained > max) warnings.push(`${subject}: marks ${obtained} are more than the maximum ${max}`);
+    if (obtained != null && obtained < 0) warnings.push(`${subject}: negative marks ${obtained}`);
     const gradeCell = colMap.grade !== undefined ? row[colMap.grade] : "";
     const grade = String(gradeCell ?? "").trim() || null;
 
@@ -401,6 +407,146 @@ function parseSheet(ws: XLSX.WorkSheet): {
   return { header, students };
 }
 
+// ============================================================
+// Marks sheet (register): one row per student, one column per subject
+// ============================================================
+//   10 वी आठवडी परीक्षा 2026-27
+//   परीक्षा दिनांक : 05/10/2026
+//   तुकडी | हजेरी क्र. | विद्यार्थ्याचे नाव | मराठी | हिंदी | English …
+//   पैकी गुण / Out of |  |  | 40 | 40 | 40 …
+//   दिनांक / Date     |  |  | 05/10/2026 | 06/10/2026 …   (optional)
+//   अ | 1 | Asha Patil | 35 | AB | 28 …
+// The way most schools already keep marks. Divisions can be mixed in one
+// sheet (Division column), one sheet per division (tab named A / अ), or a
+// "तुकडी : अ" line above the table.
+
+// Columns that are neither the student nor a subject.
+const REGISTER_IGNORE = /^(sr\.?\s*no|s\.?\s*no|अ\.?\s*क्र|क्र\.?$|gr|g\.r|जी\.?\s*आर|total|एकूण|grand total|%|percent|टक्के|result|निकाल|grade|श्रेणी|rank|क्रमांक$|remark|शेरा|attendance|उपस्थिती|sign|सही)/i;
+const OUT_OF_ROW = /out\s*of|max|पैकी|कमाल|पूर्ण\s*गुण|full marks|total marks/i;
+const DATE_ROW = /^(date|दिनांक|तारीख|paper date|exam date)/i;
+const EXAM_DATE_LABEL = /(exam|परीक्षा)\s*(date|दिनांक|तारीख)|^(date|दिनांक|तारीख)\s*[:：]/i;
+
+function parseMarksRegister(grid: Grid, sheetName: string): {
+  header: ReturnType<typeof parseHeaderTitle>;
+  students: ParsedStudentBlock[];
+} | null {
+  // Header row: separate Roll and Name cells, plus at least one subject.
+  let h = -1;
+  let cols: { roll: number; name: number; division?: number; subjects: { idx: number; name: string; max: number | null }[] } | null = null;
+  for (let i = 0; i < Math.min(grid.length, 15) && h < 0; i++) {
+    const row = grid[i] ?? [];
+    const found: Record<string, number> = {};
+    row.forEach((c, j) => { const f = classifyRosterHeader(c); if (f && found[f] === undefined) found[f] = j; });
+    if (found.roll === undefined || found.name === undefined) continue;
+    const subjects: { idx: number; name: string; max: number | null }[] = [];
+    row.forEach((c, j) => {
+      const label = String(c ?? "").replace(/\s+/g, " ").trim();
+      if (!label || Object.values(found).includes(j) || REGISTER_IGNORE.test(label)) return;
+      // "Marathi (40)", "मराठी / 40", "Maths-80" carry the max in the header
+      // ("Science 1", "Maths-2" are paper names, not a max).
+      const m = toArabicDigits(label).match(/^(.*?)\s*(?:\((\d{1,3})\)|[/\-–]\s*(\d{1,3}))\s*$/);
+      const max = m ? Number(m[2] ?? m[3]) : 0;
+      subjects.push(m && m[1].trim() && max >= 5 ? { idx: j, name: m[1].trim(), max } : { idx: j, name: label, max: null });
+    });
+    if (subjects.length === 0) continue;
+    h = i;
+    cols = { roll: found.roll, name: found.name, division: found.division, subjects };
+  }
+  if (h < 0 || !cols) return null;
+
+  // Above the table: title, exam date, a sheet-wide division.
+  let header: ReturnType<typeof parseHeaderTitle> = { test_type: null, class_hint: null, academic_year: null };
+  let examDate: string | null = null;
+  let sheetDivision: string | null = normalizeDivision(sheetName.trim());
+  for (let i = 0; i < h; i++) {
+    const cells = (grid[i] ?? []).map((c) => c).filter((c) => String(c ?? "").trim() !== "");
+    if (!cells.length) continue;
+    const first = String(cells[0]).trim();
+    if (EXAM_DATE_LABEL.test(first)) {
+      const value = splitLabelValue(first)?.value;
+      examDate = toDateISO(value || cells[1]) ?? examDate;
+    } else if (isDivisionLabel(first.split(/[:：]/)[0])) {
+      const value = splitLabelValue(first)?.value;
+      sheetDivision = normalizeDivision(String(value || cells[1] || "")) ?? sheetDivision;
+    } else if (!header.test_type && !header.academic_year) {
+      header = parseHeaderTitle(first);
+    }
+  }
+
+  // Out-of / date rows may sit right under the header (or above it).
+  const maxByCol = new Map<number, number>();
+  const dateByCol = new Map<number, string>();
+  const isMetaRow = (row: unknown[]) => {
+    const label = row.slice(0, cols!.subjects[0].idx).map((c) => String(c ?? "").trim()).find(Boolean) ?? "";
+    if (OUT_OF_ROW.test(label)) {
+      for (const sub of cols!.subjects) { const n = parseNum(row[sub.idx]); if (n != null && n > 0) maxByCol.set(sub.idx, n); }
+      return true;
+    }
+    if (DATE_ROW.test(label)) {
+      for (const sub of cols!.subjects) { const d = toDateISO(row[sub.idx]); if (d) dateByCol.set(sub.idx, d); }
+      return true;
+    }
+    return false;
+  };
+  for (let i = Math.max(0, h - 3); i < h; i++) isMetaRow(grid[i] ?? []);
+
+  const students: ParsedStudentBlock[] = [];
+  const fileWarnings: string[] = [];
+  for (let i = h + 1; i < grid.length; i++) {
+    const row = grid[i] ?? [];
+    if (isBlankRow(row) || isMetaRow(row)) continue;
+    const name = String(row[cols.name] ?? "").replace(/\s+/g, " ").trim();
+    const rollRaw = row[cols.roll];
+    if (!name) {
+      if (cols.subjects.some((s) => String(row[s.idx] ?? "").trim())) fileWarnings.push(`Row ${i + 1}: marks without a student name — skipped`);
+      continue;
+    }
+    if (classifyRosterHeader(name) === "name") continue;                    // header repeated on page 2
+    if (/^(total|एकूण|average|सरासरी|signature|सही|class teacher|वर्गशिक्षक)/i.test(name)) continue;
+
+    const warnings: string[] = [];
+    const roll = parseNum(rollRaw);
+    const divRaw = cols.division !== undefined ? String(row[cols.division] ?? "").trim() : "";
+    const division = divRaw ? normalizeDivision(divRaw) : sheetDivision;
+    if (divRaw && !division) warnings.push(`division “${divRaw}” isn't recognised`);
+
+    const subjects: ParsedSubject[] = cols.subjects.map((sub, k) => {
+      const mark = readMark(row[sub.idx]);
+      const max = maxByCol.get(sub.idx) ?? sub.max ?? mark.max ?? null;
+      if (mark.unreadable) warnings.push(`${sub.name}: “${mark.unreadable}” isn't a mark`);
+      if (mark.value != null && max != null && mark.value > max) warnings.push(`${sub.name}: ${mark.value} is more than ${max}`);
+      if (mark.value != null && mark.value < 0) warnings.push(`${sub.name}: negative mark ${mark.value}`);
+      return {
+        paper_no: k + 1,
+        date: dateByCol.get(sub.idx) ?? examDate,
+        subject: sub.name,
+        marks_obtained: mark.value,
+        max_marks: max,
+        grade: null,
+      };
+    });
+    students.push({
+      raw_student_name: name,
+      roll_no: roll != null && Number.isInteger(roll) ? roll : null,
+      division_canonical: division,
+      gr_no: null,
+      test_type: header.test_type,
+      academic_year: header.academic_year,
+      class_hint: header.class_hint,
+      subjects,
+      warnings,
+    });
+  }
+  if (students.length && cols.subjects.some((s) => !maxByCol.has(s.idx) && s.max == null)) {
+    fileWarnings.push("Some subjects have no “Out of” marks — add a पैकी गुण / Out of row under the headings.");
+  }
+  if (students.length && !examDate && dateByCol.size === 0) {
+    fileWarnings.push("No exam date in the file — enter it on the next screen.");
+  }
+  if (students[0]) students[0].warnings.unshift(...fileWarnings.map((w) => `(sheet) ${w}`));
+  return { header, students };
+}
+
 // Sheet names we always skip (documentation / helper sheets)
 const SKIP_SHEET_PATTERNS = [
   /^how\s*to\s*fill/i,
@@ -414,7 +560,7 @@ const SKIP_SHEET_PATTERNS = [
 // Top-level: parse an ArrayBuffer / Uint8Array to a ParsedFile
 // ============================================================
 export function parseResultsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedFile {
-  const wb = XLSX.read(buf, { cellDates: true });
+  const wb = XLSX.read(buf, { cellDates: true, raw: true });   // raw: CSV text stays text (no UTC date guessing)
 
   const allStudents: ParsedStudentBlock[] = [];
   const warnings: string[] = [];
@@ -425,7 +571,8 @@ export function parseResultsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedFile 
     if (SKIP_SHEET_PATTERNS.some((re) => re.test(name.trim()))) continue;
 
     const ws = wb.Sheets[name];
-    const { header: h, students } = parseSheet(ws);
+    // A marks sheet (one row per student) if it looks like one, else report-card blocks.
+    const { header: h, students } = parseMarksRegister(sheetToGrid(ws), name) ?? parseSheet(ws);
 
     // Record the first non-empty header we see, purely for the file-level display default.
     if (header.test_type === null && header.class_hint === null && header.academic_year === null) {
@@ -437,6 +584,10 @@ export function parseResultsWorkbook(buf: ArrayBuffer | Uint8Array): ParsedFile 
     for (const s of students) {
       if (!s.raw_student_name && wb.SheetNames.length > 1) {
         s.raw_student_name = name.trim();
+      }
+      // Per-student problems go into the list the upload screen shows.
+      for (const w of s.warnings) {
+        warnings.push(`${s.raw_student_name || `Sheet “${name}”`}${s.roll_no != null ? ` (roll ${s.roll_no})` : ""}: ${w}`);
       }
     }
 

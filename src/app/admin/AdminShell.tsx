@@ -11,19 +11,31 @@ import { cn } from "@/lib/utils";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
 import { useLang } from "@/lib/i18n/LangContext";
 import { dict, t } from "@/lib/i18n/dict";
+import { schoolNameFor } from "@/lib/schoolName";
 
 export default function AdminShell({
-  children, userEmail, schoolName, logoUrl,
-}: { children: ReactNode; userEmail: string; schoolName: string; logoUrl: string | null }) {
+  children, userEmail, school, logoUrl,
+}: {
+  children: ReactNode;
+  userEmail: string;
+  school: { name: string | null; name_mr: string | null };
+  logoUrl: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { lang, setLang } = useLang();
+  const schoolName = schoolNameFor(school, lang, "Saraswati Portal");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  // Close mobile sidebar on route change.
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  // Close mobile sidebar on route change (reset during render, not in an
+  // effect, so the closed state lands in the same render).
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setMobileOpen(false);
+  }
   // Close user menu on any click outside.
   useEffect(() => {
     if (!userMenuOpen) return;

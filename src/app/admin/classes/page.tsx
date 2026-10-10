@@ -1,5 +1,6 @@
 import { createSupabaseServer } from "@/lib/supabase/server";
 import StandardsClient from "./StandardsClient";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 export default async function StandardsPage() {
   const supabase = await createSupabaseServer();
@@ -14,7 +15,9 @@ export default async function StandardsPage() {
       .select("id, standard_id, name, is_active, display_order")
       .order("display_order", { ascending: true })
       .order("name", { ascending: true }),
-    supabase.from("students").select("division_id"),
+    selectAll<{ division_id: string }>((from, to) =>
+      supabase.from("students").select("division_id").order("id").range(from, to),
+    ).then((data) => ({ data })),
   ]);
 
   const studentCountByDivision = new Map<string, number>();

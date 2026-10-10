@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Modal, ModalActions } from "./Modal";
 import { Button } from "./Button";
@@ -42,9 +42,12 @@ export function ConfirmDialog({
   const requiresChallenge = !!challengeText;
   const passesChallenge = !requiresChallenge || typed.trim() === challengeText.trim();
 
-  useEffect(() => {
+  // Clear the typed challenge whenever the dialog closes.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
     if (!open) setTyped("");
-  }, [open]);
+  }
 
   return (
     <Modal open={open} onClose={onClose} size="md" showClose={false} title={undefined}>

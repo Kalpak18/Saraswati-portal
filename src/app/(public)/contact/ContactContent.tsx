@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Navigation } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { PageIntro } from "../components/PageIntro";
 import ContactForm from "./ContactForm";
@@ -8,7 +8,10 @@ import ContactForm from "./ContactForm";
 export default function ContactContent({
   school,
 }: {
-  school: { name: string | null; address: string | null };
+  school: {
+    name: string | null; address: string; map_url: string; map_embed_url: string;
+    phone: string | null; email: string | null; office_hours: string | null; office_hours_mr: string | null;
+  };
 }) {
   const { lang } = useLang();
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
@@ -29,28 +32,33 @@ export default function ContactContent({
           {/* Left: info stack */}
           <div className="lg:col-span-2">
             <div className="space-y-3">
-              {school.address && (
+              <InfoRow
+                icon={<MapPin className="h-5 w-5" />}
+                title={t("पत्ता", "Address")}
+                body={school.address}
+                href={school.map_url}
+              />
+              {school.phone && (
                 <InfoRow
-                  icon={<MapPin className="h-5 w-5" />}
-                  title={t("पत्ता", "Address")}
-                  body={school.address}
+                  icon={<Phone className="h-5 w-5" />}
+                  title={t("फोन", "Phone")}
+                  body={school.phone}
+                  href={`tel:${school.phone.replace(/[^\d+]/g, "")}`}
                 />
               )}
               <InfoRow
-                icon={<Phone className="h-5 w-5" />}
-                title={t("फोन", "Phone")}
-                body={t("तपशील लवकरच", "Details coming soon")}
-              />
-              <InfoRow
                 icon={<Mail className="h-5 w-5" />}
                 title={t("ईमेल", "Email")}
-                body={t("आमच्या फॉर्मद्वारे संदेश पाठवा.", "Reach us via the form.")}
+                body={school.email ?? t("आमच्या फॉर्मद्वारे संदेश पाठवा.", "Reach us via the form.")}
+                href={school.email ? `mailto:${school.email}` : undefined}
               />
-              <InfoRow
-                icon={<Clock className="h-5 w-5" />}
-                title={t("वेळ", "Office hours")}
-                body={t("सोम – शनि, सकाळी ९ ते संध्याकाळी ५", "Mon – Sat, 9 AM to 5 PM")}
-              />
+              {(school.office_hours || school.office_hours_mr) && (
+                <InfoRow
+                  icon={<Clock className="h-5 w-5" />}
+                  title={t("वेळ", "Office hours")}
+                  body={(lang === "mr" ? school.office_hours_mr || school.office_hours : school.office_hours || school.office_hours_mr) ?? ""}
+                />
+              )}
             </div>
           </div>
 
@@ -72,14 +80,42 @@ export default function ContactContent({
             </div>
           </div>
         </div>
+
+        {/* Map */}
+        <section className="mt-12 overflow-hidden rounded-3xl bg-white shadow-lg shadow-brand-950/5 ring-1 ring-ink-100">
+          <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div>
+              <h2 className="font-display text-xl font-semibold text-ink-900">{t("शाळेपर्यंत कसे पोहोचाल", "Find us")}</h2>
+              <p className="mt-1 text-sm text-ink-600">{school.address}</p>
+            </div>
+            <a
+              href={school.map_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex flex-none items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800"
+            >
+              <Navigation className="h-4 w-4" />
+              {t("दिशा मिळवा", "Get directions")}
+            </a>
+          </div>
+          <iframe
+            src={school.map_embed_url}
+            title={t("शाळेचा नकाशा", "Map showing the school")}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className="block h-80 w-full border-0 sm:h-105"
+          />
+        </section>
       </div>
     </>
   );
 }
 
-function InfoRow({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
-  return (
-    <div className="flex items-start gap-4 rounded-2xl border border-ink-100 bg-white p-5 shadow-sm">
+function InfoRow({
+  icon, title, body, href,
+}: { icon: React.ReactNode; title: string; body: string; href?: string }) {
+  const inner = (
+    <>
       <div className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
         {icon}
       </div>
@@ -89,6 +125,15 @@ function InfoRow({ icon, title, body }: { icon: React.ReactNode; title: string; 
         </div>
         <div className="mt-1 text-sm leading-relaxed text-ink-800">{body}</div>
       </div>
-    </div>
+    </>
+  );
+  const cls = "flex items-start gap-4 rounded-2xl border border-ink-100 bg-white p-5 shadow-sm";
+  return href ? (
+    <a href={href} {...(/^https?:/.test(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className={`${cls} transition-colors hover:border-brand-200 hover:bg-brand-50/40`}>
+      {inner}
+    </a>
+  ) : (
+    <div className={cls}>{inner}</div>
   );
 }

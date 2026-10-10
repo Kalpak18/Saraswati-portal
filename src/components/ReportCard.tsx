@@ -1,9 +1,14 @@
+import type { Branding } from "@/lib/branding";
+import { SchoolLetterhead } from "./SchoolLetterhead";
+
 // Pure server component — no client JS needed.
 // Renders in the same layout as the school's Excel: header + logo, exam title,
 // student name, paper table (as-in-file). Print-ready.
 
 export type ReportCardData = {
-  school: { name: string; address: string; logo_url: string | null };
+  school: { name: string; name_mr: string; address: string; logo_url: string | null };
+  /** Letterhead lines and layout from Settings → School identity. */
+  branding: Branding;
   className: string;
   test_type: string;
   academic_year: string;
@@ -18,30 +23,18 @@ export type ReportCardData = {
   }[];
 };
 
+/** 2026-07-27 → 27/07/2026, the way the school writes it. */
+const dmy = (iso: string | null) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : iso ?? "");
+
 export function ReportCard({ data }: { data: ReportCardData }) {
   return (
     <div className="report-card mx-auto max-w-180 bg-white p-4 text-ink-900 shadow-sm sm:p-6 sm:shadow print:max-w-none print:p-6 print:shadow-none">
-      {/* School header */}
-      <header className="mb-4 flex items-center gap-3 border-b border-ink-900 pb-3 sm:gap-4">
-        {data.school.logo_url && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={data.school.logo_url}
-            alt=""
-            className="h-12 w-12 flex-none object-contain sm:h-16 sm:w-16"
-          />
-        )}
-        <div className="min-w-0 flex-1 text-center">
-          <h1 className="font-display text-base font-bold sm:text-xl">{data.school.name}</h1>
-          {data.school.address && (
-            <div className="mt-0.5 text-[11px] text-ink-600 sm:text-xs">{data.school.address}</div>
-          )}
-        </div>
-      </header>
+      {/* School letterhead (Settings → School identity) */}
+      <SchoolLetterhead school={data.school} branding={data.branding} />
 
       {/* Exam title */}
       <h2 className="mb-3 text-center font-display text-sm font-semibold sm:text-lg">
-        {data.className} {data.test_type} {data.academic_year}
+        {data.className} {data.test_type} <span className="whitespace-nowrap">{data.academic_year}</span>
       </h2>
 
       {/* Student meta */}
@@ -55,8 +48,9 @@ export function ReportCard({ data }: { data: ReportCardData }) {
       </div>
 
       {/* Paper table — horizontally scrolled on mobile, full width on print/laptop */}
-      <div className="-mx-4 overflow-x-auto sm:mx-0 print:mx-0 print:overflow-visible">
-        <table className="w-full min-w-[420px] border-collapse border border-ink-900 text-xs sm:text-sm">
+      {/* Fits a 360px phone without sideways scrolling; scrolls only if narrower. */}
+      <div className="overflow-x-auto print:overflow-visible">
+        <table className="w-full min-w-[300px] border-collapse border border-ink-900 text-xs sm:text-sm [&_td]:px-1.5 sm:[&_td]:px-2 [&_th]:px-1.5 sm:[&_th]:px-2">
           <thead>
             <tr className="bg-ink-100">
               <th className="border border-ink-900 px-2 py-1 text-left">पेपर क्र</th>
@@ -70,9 +64,9 @@ export function ReportCard({ data }: { data: ReportCardData }) {
             {data.papers.map((p, i) => (
               <tr key={i}>
                 <td className="border border-ink-900 px-2 py-1 tabular-nums">{p.paper_no ?? ""}</td>
-                <td className="border border-ink-900 px-2 py-1 tabular-nums">{p.paper_date ?? ""}</td>
+                <td className="whitespace-nowrap border border-ink-900 px-2 py-1 tabular-nums">{dmy(p.paper_date)}</td>
                 <td className="border border-ink-900 px-2 py-1">{p.subject_name}</td>
-                <td className="border border-ink-900 px-2 py-1 text-right tabular-nums">{p.marks_obtained ?? ""}</td>
+                <td className="border border-ink-900 px-2 py-1 text-right tabular-nums">{p.marks_obtained ?? "—"}</td>
                 <td className="border border-ink-900 px-2 py-1 text-right tabular-nums">{p.max_marks ?? ""}</td>
               </tr>
             ))}

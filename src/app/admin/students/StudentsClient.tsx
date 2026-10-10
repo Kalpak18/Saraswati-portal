@@ -1,8 +1,9 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
+import { parseStudentsWorkbook, type StudentImport } from "@/lib/excel/parseStudents";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { Pencil, Trash2, Upload, Users, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -14,7 +15,20 @@ import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { COUNTRIES, DEFAULT_COUNTRY, type Country } from "@/lib/countries";
-import { saveStudent, deleteStudent, importStudents } from "./actions";
+import { saveStudent as saveStudentAction, deleteStudent as deleteStudentAction, importStudents as importStudentsAction, importSchoolStudents as importSchoolStudentsAction } from "./actions";
+import { normalizeDivision, normalizeStandard, STANDARDS } from "@/lib/i18n/normalize";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveStudent = clientAction(saveStudentAction);
+const deleteStudent = clientAction(deleteStudentAction);
+const importStudents = clientAction(importStudentsAction);
+const importSchoolStudents = clientAction(importSchoolStudentsAction);
+
+/** Academic year running today (starts in June): Oct 2026 → "2026-27". */
+function currentAcademicYear(d = new Date()) {
+  const y = d.getMonth() >= 5 ? d.getFullYear() : d.getFullYear() - 1;
+  return `${y}-${String((y + 1) % 100).padStart(2, "0")}`;
+}
 
 type Std = { id: string; name: string; academic_year: string };
 type Div = { id: string; standard_id: string; name: string };
@@ -149,56 +163,58 @@ export default function StudentsClient({
     });
   }
 
-  function excelDateToISO(v: unknown): string {
-    if (v == null || v === "") return "";
-    if (typeof v === "string") {
-      const m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-      const m2 = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-      if (m2) return `${m2[3]}-${m2[2].padStart(2, "0")}-${m2[1].padStart(2, "0")}`;
-      return v;
+  // Parsed roster waiting for the admin to confirm (see the import modal).
+  const [review, setReview] = useState<(StudentImport & { fileName: string }) | null>(null);
+  const yearOptions = Array.from(new Set([currentAcademicYear(), ...standards.map((s) => s.academic_year)])).sort().reverse();
+  const [schoolYear, setSchoolYear] = useState(currentAcademicYear());
+
+  // Whole-school file: how many students land in each class/division, and
+  // which of those classes/divisions don't exist yet for the chosen year.
+  const schoolPlan = useMemo(() => {
+    if (!review?.wholeSchool) return null;
+    const stdOfYear = new Map(standards.filter((s) => s.academic_year === schoolYear).map((s) => [normalizeStandard(s.name) ?? s.name, s.id]));
+    const existingDiv = new Set(divisions.map((d) => `${d.standard_id}|${normalizeDivision(d.name) ?? d.name}`));
+    const groups = new Map<string, { standard: string; division: string; count: number; isNew: boolean }>();
+    for (const r of review.rows) {
+      const k = `${r.standard}|${r.division}`;
+      const g = groups.get(k);
+      if (g) { g.count++; continue; }
+      const sid = stdOfYear.get(r.standard!);
+      groups.set(k, { standard: r.standard!, division: r.division!, count: 1, isNew: !sid || !existingDiv.has(`${sid}|${r.division}`) });
     }
-    if (v instanceof Date) return v.toISOString().slice(0, 10);
-    if (typeof v === "number") {
-      const d = XLSX.SSF.parse_date_code(v);
-      if (!d) return "";
-      return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
-    }
-    return String(v);
-  }
+    const order = (n: string) => STANDARDS.find((x) => x.canonical === n)?.number ?? 99;
+    return Array.from(groups.values()).sort((a, b) => order(a.standard) - order(b.standard) || a.division.localeCompare(b.division));
+  }, [review, standards, divisions, schoolYear]);
 
   async function handleFile(file: File) {
-    if (!selectedDivisionId) { toast.error("Select a division first"); return; }
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { cellDates: true });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
-
-    const cleaned: unknown[] = [];
-    const errors: string[] = [];
-    rows.forEach((r, i) => {
-      const roll = Number(r.roll_no ?? r["Roll No"] ?? r["roll no"]);
-      const name = String(r.student_name ?? r["Student Name"] ?? r.name ?? "").trim();
-      const mobile = String(r.parent_mobile ?? r["Parent Mobile"] ?? r.mobile ?? "").trim();
-      const dob = excelDateToISO(r.dob ?? r["DOB"] ?? r["Date of Birth"]);
-      const gender = String(r.gender ?? r["Gender"] ?? "").trim();
-      if (!roll || !name || !mobile || !dob) {
-        errors.push(`Row ${i + 2}: missing required fields`);
+    try {
+      const parsed = parseStudentsWorkbook(await file.arrayBuffer());
+      if (!parsed.wholeSchool && !selectedDivisionId) {
+        toast.error("Add Class and Division columns to import the whole school, or create a division first");
         return;
       }
-      cleaned.push({
-        roll_no: roll, student_name: name, parent_mobile: mobile, dob,
-        gender: gender || null,
-      });
-    });
+      setReview({ ...parsed, fileName: file.name });
+    } catch (err) {
+      toast.error(`Couldn't read this file: ${(err as Error).message}`);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
-    if (cleaned.length === 0) { toast.error(errors[0] || "No valid rows found"); return; }
-
+  function confirmImport() {
+    if (!review) return;
+    const rows = review.rows.map(({ row: _r, ...rest }) => { void _r; return rest; });
     startTransition(async () => {
       try {
-        const { inserted } = await importStudents(selectedDivisionId, cleaned);
-        toast.success(`Imported ${inserted} students`);
-        if (errors.length) toast.warning(`${errors.length} rows skipped — check formatting`);
+        if (review.wholeSchool) {
+          const r = await importSchoolStudents(schoolYear, rows);
+          toast.success(`Imported ${r.saved} students${r.divisions_created ? ` · created ${r.classes_created} classes, ${r.divisions_created} divisions` : ""}`);
+        } else {
+          if (!selectedDivisionId) return;
+          const { inserted } = await importStudents(selectedDivisionId, rows);
+          toast.success(`Imported ${inserted} students`);
+        }
+        setReview(null);
         setImportOpen(false);
         router.refresh();
       } catch (err) { toast.error((err as Error).message); }
@@ -219,7 +235,6 @@ export default function StudentsClient({
             <Button
               variant="secondary"
               onClick={() => setImportOpen(true)}
-              disabled={!selectedDivisionId}
               leftIcon={<Upload className="h-4 w-4" />}
             >
               <span className="hidden sm:inline">Import Excel</span>
@@ -450,11 +465,17 @@ export default function StudentsClient({
       {/* Import modal */}
       <Modal
         open={importOpen}
-        onClose={() => setImportOpen(false)}
+        onClose={() => { setReview(null); setImportOpen(false); }}
         title="Import students from Excel"
         size="lg"
       >
         <div className="flex flex-col gap-4 text-sm">
+          <p className="text-ink-600">
+            <b>One division:</b> goes into{" "}
+            <b>{divisions.find((d) => d.id === selectedDivisionId) ? divisionLabel(divisions.find((d) => d.id === selectedDivisionId)!) : "the division selected"}</b>.{" "}
+            <b>Whole school:</b> add <code className="rounded bg-ink-100 px-1 text-xs">Class</code> and{" "}
+            <code className="rounded bg-ink-100 px-1 text-xs">Division</code> columns — every row goes to its own class, and missing classes are created.
+          </p>
           <p className="text-ink-600">
             Columns: <code className="rounded bg-ink-100 px-1 text-xs">roll_no</code>,{" "}
             <code className="rounded bg-ink-100 px-1 text-xs">student_name</code>,{" "}
@@ -466,20 +487,80 @@ export default function StudentsClient({
           <p className="text-xs text-ink-500">
             Get a ready-to-fill template at <b>Templates</b> in the sidebar.
           </p>
+          {!review ? (
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 p-6 text-center hover:border-brand-400 hover:bg-brand-50">
-            <Upload className="h-6 w-6 text-ink-400" />
-            <span className="text-sm font-medium text-ink-700">Choose an Excel file</span>
-            <span className="text-xs text-ink-500">.xlsx, .xls, or .csv</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-              className="hidden"
-            />
-          </label>
+              <Upload className="h-6 w-6 text-ink-400" />
+              <span className="text-sm font-medium text-ink-700">Choose an Excel file</span>
+              <span className="text-xs text-ink-500">.xlsx, .xls, or .csv</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                className="hidden"
+              />
+            </label>
+          ) : (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-ink-200 bg-ink-50 p-3">
+                <div className="font-medium text-ink-900">{review.fileName}</div>
+                <div className="mt-1 flex flex-wrap gap-3 text-xs">
+                  <span className="font-semibold text-emerald-700">{review.rows.length} ready to import</span>
+                  {review.errors.length > 0 && <span className="font-semibold text-red-700">{review.errors.length} row{review.errors.length === 1 ? "" : "s"} need fixing</span>}
+                  {review.warnings.length > 0 && <span className="font-semibold text-amber-700">{review.warnings.length} to double-check</span>}
+                </div>
+              </div>
+              {review.errors.length > 0 && (
+                <div className="max-h-48 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                  <div className="mb-1 font-semibold">These rows will be skipped — fix them in Excel and upload again:</div>
+                  <ul className="space-y-0.5">
+                    {review.errors.slice(0, 50).map((e) => <li key={e.row}>Row {e.row}: {e.message}</li>)}
+                    {review.errors.length > 50 && <li>…and {review.errors.length - 50} more</li>}
+                  </ul>
+                </div>
+              )}
+              {review.warnings.length > 0 && (
+                <div className="max-h-32 overflow-y-auto rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <ul className="space-y-0.5">{review.warnings.slice(0, 30).map((w, i) => <li key={i}>⚠ {w}</li>)}</ul>
+                </div>
+              )}
+              {schoolPlan && (
+                <div className="space-y-2 rounded-lg border border-ink-200 p-3">
+                  <label className="flex items-center gap-2 text-xs font-medium text-ink-700">
+                    Academic year
+                    <select value={schoolYear} onChange={(e) => setSchoolYear(e.target.value)} className="h-8 rounded-md border border-ink-300 bg-white px-2 text-sm">
+                      {yearOptions.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </label>
+                  <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
+                    {schoolPlan.map((g) => (
+                      <span key={`${g.standard}|${g.division}`} className={`rounded-full px-2 py-0.5 text-xs ${g.isNew ? "bg-brand-50 text-brand-800 ring-1 ring-brand-200" : "bg-ink-100 text-ink-700"}`}>
+                        {g.standard} {g.division} · {g.count}{g.isNew ? " · new" : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {schoolPlan.some((g) => g.isNew) && (
+                    <p className="text-xs text-brand-800">Divisions marked <b>new</b> will be created for {schoolYear}.</p>
+                  )}
+                </div>
+              )}
+              {review.rows.length > 0 && (
+                <p className="text-xs text-ink-500">
+                  Students whose roll number already exists in their division are updated; new roll numbers are added.
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setImportOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setReview(null); setImportOpen(false); }}>Cancel</Button>
+            {review && (
+              <>
+                <Button variant="ghost" onClick={() => setReview(null)}>Choose another file</Button>
+                <Button onClick={confirmImport} loading={pending} disabled={review.rows.length === 0}>
+                  Import {review.rows.length} student{review.rows.length === 1 ? "" : "s"}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </Modal>

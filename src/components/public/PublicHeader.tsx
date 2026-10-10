@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { Menu, X, ChevronDown, ArrowRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { cn } from "@/lib/utils";
+import { schoolNameFor } from "@/lib/schoolName";
+import { lineFor, type Branding } from "@/lib/branding";
 
 /**
  * Top-of-page navigation for the school website. Slim by design: only four
@@ -20,7 +22,7 @@ import { cn } from "@/lib/utils";
 export function PublicHeader({
   school,
 }: {
-  school: { name: string | null; logo_url: string | null };
+  school: { name: string | null; name_mr: string | null; logo_url: string | null; branding: Branding };
 }) {
   const pathname = usePathname();
   const { lang, setLang } = useLang();
@@ -29,15 +31,32 @@ export function PublicHeader({
   const [academicsOpen, setAcademicsOpen] = useState(false);
   const academicsRef = useRef<HTMLDivElement | null>(null);
 
+  const isHome = pathname === "/";
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    // On the home page the header floats over the full-screen hero until
+    // the hero has scrolled away; elsewhere it turns solid almost at once.
+    const onScroll = () => {
+      // Over the hero (whatever height the admin chose) the header stays clear.
+      const hero = isHome ? document.querySelector<HTMLElement>("[data-hero]") : null;
+      const until = hero ? hero.offsetHeight - 96 : 12;
+      setScrolled(window.scrollY > Math.max(12, until));
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [isHome]);
 
-  useEffect(() => setDrawer(false), [pathname]);
-  useEffect(() => setAcademicsOpen(false), [pathname]);
+  // Close menus on navigation — reset during render, not in an effect.
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setDrawer(false);
+    setAcademicsOpen(false);
+  }
 
   // Click-outside for academics dropdown.
   useEffect(() => {
@@ -52,18 +71,21 @@ export function PublicHeader({
   }, [academicsOpen]);
 
   const t = (mr: string, en: string) => (lang === "mr" ? mr : en);
+  const overlay = isHome && !scrolled && !drawer;
 
-  const name = school.name || "Saraswati School";
+  const name = schoolNameFor(school, lang);
 
   const academicsItems = [
     { href: "/lookup",              label: t("परिणाम पहा", "Check Result") },
     { href: "/academics/toppers",   label: t("गुणवंत विद्यार्थी", "Toppers") },
+    { href: "/achievements",        label: t("यशोगाथा", "Achievements") },
     { href: "/academics/faculty",   label: t("शिक्षक वर्ग", "Faculty") },
     { href: "/academics/downloads", label: t("डाउनलोड", "Downloads") },
   ];
 
   const primary = [
     { href: "/",         label: t("मुख्यपृष्ठ", "Home") },
+    { href: "/notices",  label: t("सूचना", "Notices") },
     { href: "/life",     label: t("शालेय जीवन", "Life") },
     { href: "/about",    label: t("आमच्याबद्दल", "About") },
     { href: "/contact",  label: t("संपर्क", "Contact") },
@@ -73,15 +95,17 @@ export function PublicHeader({
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 
   const isAcademicsActive =
-    pathname.startsWith("/academics") || pathname === "/lookup";
+    pathname.startsWith("/academics") || pathname === "/lookup" || pathname === "/achievements";
 
   return (
     <header
       className={cn(
         "sticky top-0 z-40 w-full transition-all duration-300",
-        scrolled
-          ? "border-b border-ink-200/70 bg-white/85 backdrop-blur-md shadow-xs"
-          : "border-b border-transparent bg-white",
+        overlay
+          ? "border-b border-transparent bg-transparent"
+          : scrolled
+            ? "border-b border-ink-200/70 bg-white/85 backdrop-blur-md shadow-xs"
+            : "border-b border-transparent bg-white",
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:h-18 sm:px-6 lg:h-20 lg:px-8">
@@ -103,19 +127,28 @@ export function PublicHeader({
             </div>
           )}
           <div className="min-w-0">
-            <div className="truncate font-display text-base font-semibold leading-tight text-ink-900 sm:text-lg">
+            {/* Identity lines (Settings → School identity). Hidden on the
+                narrowest phones, where the name alone already fills the bar. */}
+            {school.branding.header.show_top && lineFor(school.branding.top, lang) && (
+              <div className={cn("hidden truncate text-[10px] font-semibold uppercase tracking-wider sm:block", overlay ? "text-white/70" : "text-ink-500")}>
+                {lineFor(school.branding.top, lang)}
+              </div>
+            )}
+            <div className={cn("truncate font-display text-base font-semibold leading-tight sm:text-lg", overlay ? "text-white" : "text-ink-900")}>
               {name}
             </div>
-            <div className="hidden text-[10px] font-medium uppercase tracking-widest text-ink-400 sm:block">
-              Since establishment · SSC affiliated
-            </div>
+            {school.branding.header.show_bottom && lineFor(school.branding.bottom, lang) && (
+              <div className={cn("hidden truncate text-[10px] font-medium sm:block", overlay ? "text-white/70" : "text-ink-500")}>
+                {lineFor(school.branding.bottom, lang)}
+              </div>
+            )}
           </div>
         </Link>
 
         {/* Desktop nav */}
         <nav className="ml-auto hidden items-center gap-1 lg:flex">
           {primary.slice(0, 1).map((item) => (
-            <NavLink key={item.href} href={item.href} active={isActive(item.href)}>
+            <NavLink key={item.href} href={item.href} active={isActive(item.href)} overlay={overlay}>
               {item.label}
             </NavLink>
           ))}
@@ -129,9 +162,11 @@ export function PublicHeader({
               aria-haspopup="menu"
               className={cn(
                 "inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isAcademicsActive
-                  ? "bg-brand-50 text-brand-800"
-                  : "text-ink-700 hover:bg-ink-50 hover:text-ink-900",
+                overlay
+                  ? "text-white/90 hover:bg-white/10 hover:text-white"
+                  : isAcademicsActive
+                    ? "bg-brand-50 text-brand-800"
+                    : "text-ink-700 hover:bg-ink-50 hover:text-ink-900",
               )}
             >
               {t("शैक्षणिक", "Academics")}
@@ -157,7 +192,7 @@ export function PublicHeader({
           </div>
 
           {primary.slice(1).map((item) => (
-            <NavLink key={item.href} href={item.href} active={isActive(item.href)}>
+            <NavLink key={item.href} href={item.href} active={isActive(item.href)} overlay={overlay}>
               {item.label}
             </NavLink>
           ))}
@@ -166,13 +201,14 @@ export function PublicHeader({
         {/* Right cluster */}
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
           {/* Language toggle */}
-          <div className="hidden overflow-hidden rounded-full border border-ink-200 text-[11px] font-medium sm:flex">
+          <div className={cn("hidden overflow-hidden rounded-full border text-[11px] font-medium sm:flex", overlay ? "border-white/30" : "border-ink-200")}>
             <button
               onClick={() => setLang("mr")}
               aria-pressed={lang === "mr"}
               className={cn(
                 "px-2.5 py-1 transition-colors",
-                lang === "mr" ? "bg-ink-900 text-white" : "bg-white text-ink-600 hover:bg-ink-50",
+                lang === "mr" ? "bg-ink-900 text-white"
+                  : overlay ? "bg-transparent text-white/80 hover:bg-white/10" : "bg-white text-ink-600 hover:bg-ink-50",
               )}
             >
               मराठी
@@ -181,8 +217,10 @@ export function PublicHeader({
               onClick={() => setLang("en")}
               aria-pressed={lang === "en"}
               className={cn(
-                "border-l border-ink-200 px-2.5 py-1 transition-colors",
-                lang === "en" ? "bg-ink-900 text-white" : "bg-white text-ink-600 hover:bg-ink-50",
+                "border-l px-2.5 py-1 transition-colors",
+                overlay ? "border-white/30" : "border-ink-200",
+                lang === "en" ? "bg-ink-900 text-white"
+                  : overlay ? "bg-transparent text-white/80 hover:bg-white/10" : "bg-white text-ink-600 hover:bg-ink-50",
               )}
             >
               EN
@@ -201,7 +239,10 @@ export function PublicHeader({
           {/* Mobile menu */}
           <button
             type="button"
-            className="rounded-md p-2 text-ink-700 hover:bg-ink-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 lg:hidden"
+            className={cn(
+              "rounded-md p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 lg:hidden",
+              overlay ? "text-white hover:bg-white/10" : "text-ink-700 hover:bg-ink-50",
+            )}
             onClick={() => setDrawer((v) => !v)}
             aria-label={drawer ? "Close menu" : "Open menu"}
             aria-expanded={drawer}
@@ -280,10 +321,11 @@ export function PublicHeader({
 }
 
 function NavLink({
-  href, active, children,
+  href, active, overlay, children,
 }: {
   href: string;
   active: boolean;
+  overlay: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -292,9 +334,9 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-brand-50 text-brand-800"
-          : "text-ink-700 hover:bg-ink-50 hover:text-ink-900",
+        overlay
+          ? active ? "bg-white/15 text-white" : "text-white/90 hover:bg-white/10 hover:text-white"
+          : active ? "bg-brand-50 text-brand-800" : "text-ink-700 hover:bg-ink-50 hover:text-ink-900",
       )}
     >
       {children}

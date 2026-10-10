@@ -16,7 +16,15 @@ export type MediaKind =
   | "achievements"
   | "gallery"
   | "toppers"
+  | "banners"
+  | "video"
+  | "notices"
+  | "downloads"
   | "logo";
+
+// 50 MB: the Supabase free-tier ceiling per object. Photos never get near
+// it (they are resized in the browser first); it exists for hero videos.
+const BUCKET_LIMIT = 50 * 1024 * 1024;
 
 /**
  * Idempotent bucket bootstrap. Safe to call from any server action — the
@@ -26,11 +34,12 @@ export type MediaKind =
 async function ensureBucket() {
   const admin = createSupabaseAdmin();
   const { data } = await admin.storage.listBuckets();
-  if (!data?.some((b) => b.name === PUBLIC_BUCKET)) {
-    await admin.storage.createBucket(PUBLIC_BUCKET, {
-      public: true,
-      fileSizeLimit: 5 * 1024 * 1024, // 5 MB — enough for a photo, not enough for a raw camera dump
-    });
+  const bucket = data?.find((b) => b.name === PUBLIC_BUCKET);
+  if (!bucket) {
+    await admin.storage.createBucket(PUBLIC_BUCKET, { public: true, fileSizeLimit: BUCKET_LIMIT });
+  } else if ((bucket.file_size_limit ?? 0) < BUCKET_LIMIT) {
+    // Buckets created before videos existed were capped at 5 MB.
+    await admin.storage.updateBucket(PUBLIC_BUCKET, { public: true, fileSizeLimit: BUCKET_LIMIT });
   }
 }
 
@@ -77,4 +86,35 @@ export async function deletePublicImage(publicUrl: string) {
 
   const admin = createSupabaseAdmin();
   await admin.storage.from(PUBLIC_BUCKET).remove([path]);
+}
+
+/**
+ * Large files (videos, PDF notices) are too big to pass through a server
+ * action, so the browser uploads them straight to Storage with a one-time
+ * signed URL. The caller (an authenticated server action) decides the path;
+ * the browser only gets permission to write that one object.
+ */
+async function createSignedUpload(kind: MediaKind, fileName: string, allowed: string[]) {
+  await ensureBucket();
+  const ext = (fileName.split(".").pop() || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!allowed.includes(ext)) throw new Error(`Only ${allowed.join(", ")} files are allowed`);
+  const path = `${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  const admin = createSupabaseAdmin();
+  const { data, error } = await admin.storage.from(PUBLIC_BUCKET).createSignedUploadUrl(path);
+  if (error || !data) throw new Error(`Could not start upload: ${error?.message}`);
+  const { data: pub } = admin.storage.from(PUBLIC_BUCKET).getPublicUrl(path);
+  return { bucket: PUBLIC_BUCKET, path, token: data.token, url: pub.publicUrl };
+}
+
+export function createSignedVideoUpload(fileName: string) {
+  return createSignedUpload("video", fileName, ["mp4", "webm", "mov", "m4v"]);
+}
+
+export function createSignedDownloadUpload(fileName: string) {
+  return createSignedUpload("downloads", fileName, ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"]);
+}
+
+export function createSignedNoticeUpload(fileName: string) {
+  return createSignedUpload("notices", fileName, ["pdf", "jpg", "jpeg", "png", "webp"]);
 }

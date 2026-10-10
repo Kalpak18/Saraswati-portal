@@ -8,13 +8,16 @@ Everything needed to put this portal online and keep it running for a school.
 
 | Service | Plan | Cost | Why this one |
 |---|---|---|---|
-| **Supabase** | **Pro** | **$25/mo** | Database, auth, storage. **The free tier is not viable**: it pauses the project after 7 days of inactivity (this already happened once — the portal went offline) and includes no backups. Pro gives daily backups, 7-day point-in-time recovery, and no pausing. |
-| **Vercel** | Hobby (free) or Pro ($20/mo) | $0–20/mo | Hosting for Next.js. Hobby is fine technically and supports custom domains; Vercel's terms reserve Hobby for non-commercial use, so a fee-charging school should be on Pro. |
-| **Domain** | — | ~₹800–1200/yr | e.g. `results.yourschool.in`. Buy anywhere; point it at Vercel. |
+| **Supabase** | Free | $0 | Database, auth, storage. Free works for this school with three safeguards that are built in: the daily keep-alive (free projects pause after 7 days without activity), deleting old exams from Admin → Results to stay under 500 MB, and the weekly backup below (free has no automatic backups). Move to Pro ($25/mo) only if the school wants automatic daily backups or keeps many years of weekly tests online. |
+| **Vercel** | Hobby (free) | $0 | Hosting for Next.js, CDN included, custom domain supported. Runs the daily keep-alive cron. Vercel's terms reserve Hobby for non-commercial use; if that's a concern for a fee-charging school, Pro is $20/mo or the app can be moved to Netlify / Cloudflare. |
+| **Domain** | — | ~₹800–1200/yr | e.g. `saraswatividyalaya.in`. Buy anywhere; point it at Vercel. |
 | **Sentry** | Developer (free) | $0 | Error tracking — **already wired up**. 5k errors/month free is ample. |
-| **UptimeRobot** or **BetterStack** | Free | $0 | Pings the site every 5 min and alerts you if it's down — most useful on result day. |
+| **UptimeRobot** | Free | $0 | Pings `https://<domain>/api/keepalive` every 5 min and emails you if the site or database is down — most useful on result day. |
+| **Resend** or **Brevo** | Free | $0 | Email for admin password resets (Supabase's built-in sender allows only 2 emails/hour). See §8. |
 
-**Realistic total: $25/mo (~₹2,100)**, or $45/mo with Vercel Pro.
+**Realistic total: ₹0/month + the domain (~₹1,000/year).**
+
+**Free-plan limits to keep in mind:** 500 MB database (one exam round for 5,000 students ≈ 15 MB, so ~30 exam rounds before cleaning up), 1 GB of photos/videos, 5 GB of downloads a month (keep the hero video under ~5 MB).
 
 ### Not needed
 - **Redis / Upstash** — rate limiting runs in Postgres (see §3). Only worth adding above ~100 lookups/second, which a single school will never reach.
@@ -29,7 +32,7 @@ Everything needed to put this portal online and keep it running for a school.
 
 ## 2. Deploy
 
-1. **Apply the database migration.** Supabase → SQL Editor → paste `supabase/production.sql` → Run. Safe to re-run.
+1. **Apply the database migrations.** Supabase → SQL Editor → paste and run, in this order: `supabase/production.sql`, `supabase/cms.sql`, `supabase/drop_deprecated.sql`, `supabase/achievements.sql`, `supabase/home_story.sql`, `supabase/notices.sql`, `supabase/home_sections.sql`, `supabase/launch.sql`, `supabase/scale.sql`. Each is safe to re-run. `achievements.sql` powers the achievements importer and toppers; `home_story.sql` the video hero, banners, Marathi school name and map link; `notices.sql` the notice board; `home_sections.sql` the home & About page builder and the phone / email / office-hours settings; `launch.sql` Appearance, team details (and hides teachers' private contacts from the public API) and Downloads; `scale.sql` the indexes, rate limiting and audit sizing for a full school (~5000 students).
 2. **Push to GitHub**, then Vercel → *Add New Project* → import the repo.
 3. **Set environment variables** in Vercel (*Settings → Environment Variables*), for Production **and** Preview:
 
@@ -38,13 +41,17 @@ Everything needed to put this portal online and keep it running for a school.
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon public key |
    | `SUPABASE_SERVICE_ROLE_KEY` | service_role secret — **never** prefix with `NEXT_PUBLIC_` |
-   | `IP_HASH_SALT` | any long random string (`openssl rand -hex 32`) |
-   | `LOOKUP_RATE_LIMIT` | `30` (optional; lookups per IP per window) |
+   | `IP_HASH_SALT` | **required** — a long random string (`openssl rand -hex 32`). The site refuses to start in production without it. Use a different value from your laptop's. |
+   | `NEXT_PUBLIC_SITE_URL` | the public address, e.g. `https://saraswatividyalaya.in` — used for the sitemap and WhatsApp/Facebook link previews |
+   | `LOOKUP_RATE_LIMIT` | `300` (optional; lookups per network/IP per window) |
    | `LOOKUP_RATE_WINDOW_SECONDS` | `600` (optional) |
+   | `LOOKUP_MOBILE_LIMIT` | `20` (optional; lookups per mobile number per 24 h) |
    | `NEXT_PUBLIC_SENTRY_DSN` | your Sentry DSN (already in `.env.local`) |
+   | `CRON_SECRET` | optional — any random string; Vercel then signs its daily keep-alive call and nobody else can trigger it |
    | `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | optional — only for readable stack traces, see §7 |
 
 4. **Deploy**, then add your custom domain in Vercel and follow its DNS instructions.
+4a. **Point Supabase auth at the live site.** Supabase → Authentication → URL Configuration: set *Site URL* to your domain and add `https://<your-domain>/auth/callback` to *Redirect URLs*. Without this, password-reset emails link back to localhost.
 5. **Rotate the admin password** from inside Supabase → Authentication → Users. The current one was set during development and is sitting in a chat transcript.
 6. **Smoke test on the live URL**: parent lookup with a real mobile + DOB, one report card, admin login, one Excel upload.
 
@@ -59,23 +66,29 @@ Everything needed to put this portal online and keep it running for a school.
 - **Environment validation** — `src/lib/env.ts` fails at boot with a readable list of what's missing, instead of a cryptic error mid-request.
 - **Security headers** — HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer and permissions policy. `/lookup/*` and `/admin/*` are `private, no-store` so no shared proxy ever caches one child's report card and serves it to another parent. `X-Powered-By` removed.
 - **Audit retention** — `prune_audit_log()` drops entries older than two years.
+- **Readable errors in production.** React hides messages thrown by server actions in production ("Minified React error #441"). Every action returns `{ ok, error }` through `src/lib/actionResult.ts`, so parents and admins see the real reason.
+- **Uploads are admin-only.** Every upload action checks the session before using the service-role key; the logo accepts raster images only (no SVG). Large files (videos, PDFs, documents) go browser → Storage through one-time signed URLs.
+- **Contact form spam protection** — a hidden honeypot field plus a limit of 3 messages per hashed IP per 10 minutes.
+- **Private data stays private.** Teachers' email/phone are served only through the `team_public` view, and only when "show on website" is ticked; the table itself is closed to the public API. Report cards, admin and login pages are `noindex` and disallowed in `robots.txt`.
+- **SEO** — `sitemap.xml` (pages + every event), `robots.txt`, titles/descriptions/link previews built from the school's name, logo and hero photo.
 
 ---
 
 ## 4. Will it handle the load?
 
-For a 2,000-student school, comfortably.
+Sized for ~5,000 students, classes 1–12 × ~6 divisions (~72 divisions).
 
-| Table | Rows/year at 2,000 students | Notes |
+| Table | Rows/year | Notes |
 |---|---|---|
-| `students` | 2,000 | Trivial. |
-| `exams` | ~60 | 6 exams × 10 divisions. |
-| `marks` | ~120,000 | 2,000 × 6 exams × 10 papers. Postgres handles millions. |
-| `audit_log` | ~120,000 | One row per mark written; pruned at 2 years. |
+| `students` | ~5,000 | Trivial. |
+| `exams` | ~300–1,000 | 72 divisions × 4–14 tests. Admin list is filtered by year / class / test. |
+| `marks` | ~200k–700k | ~15 MB per exam round for the whole school. |
+| `audit_log` | small | Uploaded marks aren't duplicated here; only corrections and deletions. |
 
-- **Parent lookup** is now a two-column index hit — sub-millisecond regardless of school size.
-- **Result-day spike** is the real load: if 2,000 parents check within an hour that's under 1 request/second, with bursts of maybe 50/s. Vercel scales serverless functions automatically, and Supabase's API layer is HTTP-based (PostgREST), so there's no connection-pool exhaustion.
-- **Headroom**: this design stays comfortable to roughly 50,000 students before anything needs revisiting.
+- **Parent lookup**: two-column index hit. Load-tested at ~220 lookups/second with 100 at once and no errors — far beyond 5,000 families on result day.
+- **No silent truncation**: Supabase returns at most 1,000 rows per request; every list that can pass that is paged (`src/lib/supabase/selectAll.ts`).
+- **Print-all report cards**: 4 queries per division, whatever its size.
+- **Imports**: whole-school roster in one file (saved 500 rows at a time); results one class (all divisions) per file.
 
 Verify the index is being used after applying the migration:
 
@@ -95,20 +108,28 @@ where parent_mobile_norm = '9822014571' and dob = '2010-05-13';
    - Sign links with a short-lived token (~30 min) — a few hours of work.
    - Require re-entering DOB on the card page.
 
-**2. Shared IPs and the rate limit.** 30 lookups per 10 minutes per IP. Parents on the same school WiFi or a carrier NAT share an IP, so a crowd at a school event could trip it. Raise `LOOKUP_RATE_LIMIT` to 100+ if that happens.
+**2. Shared IPs and the rate limit.** Two budgets: 300 lookups per 10 minutes per network (parents on school Wi-Fi or a Jio/Airtel NAT share an IP), and 20 per mobile number per day from any network — that second one is what stops someone guessing a child's date of birth. Load-tested at ~220 lookups/second with no errors.
 
 **3. Excel upload on serverless.** Parsing happens in-process. Vercel's limits (4.5 MB request body; 60s execution on Pro) are fine for class-sized files but will fail on a very large workbook. If uploads grow, move parsing to a background job.
 
-**4. No automated tests.** There is no test suite. The mark-parsing and name-matching logic in `src/lib/excel` and `src/lib/match` is where a silent bug would be most costly — a wrong mark on a report card. Worth covering before the portal handles a full school's results.
+**4. Tests.** `npm run check:imports` runs every Excel template through the importers with real-world data (83 checks). Name matching in `src/lib/match` is not covered yet.
 
-**5. One admin account.** No roles, no per-teacher logins, no way to see who changed a mark beyond `audit_log.actor_id`. Fine for one clerk; revisit if teachers get access.
+**5. Database size.** See §1. Watch Supabase → Project → Usage; when it nears 400 MB, delete the oldest year's exams from Admin → Results (filter by year → Delete all shown).
+
+**6. One admin login shared by staff.** No roles, no per-teacher logins, no way to see who changed a mark beyond `audit_log.actor_id`. Fine for one clerk; revisit if teachers get access.
 
 ---
 
 ## 6. Routine operations
 
-- **Backups**: automatic on Supabase Pro. Test a restore once before you depend on it.
-- **Before each exam upload**: Supabase → Database → Backups → take a manual snapshot.
+- **Backups (free plan has none automatically)** — once a week, and before deleting old exams:
+  ```bash
+  # Supabase → Project Settings → Database → Connection string (URI, "Session pooler")
+  pg_dump "postgresql://postgres.<ref>:<password>@<host>:5432/postgres" --no-owner -Fc -f saraswati-$(date +%F).dump
+  ```
+  Keep the files on Google Drive. Restore with `pg_restore --no-owner -d "<connection string>" saraswati-YYYY-MM-DD.dump`. Also keep every uploaded Excel file — re-uploading them rebuilds results.
+- **Each new academic year**: import the whole-school roster for the new year (classes are created automatically). Last year's classes and results stay until you delete them.
+- **Space**: delete old exams from Admin → Results when usage nears 400 MB (after a backup).
 - **Monitoring**: Sentry is live (see §7). Check its dashboard after each result day.
 - **Key rotation**: if the service-role key ever leaks, rotate it in Supabase → Settings → API, then update Vercel's env var and redeploy.
 
@@ -225,3 +246,29 @@ Two related hardenings in the same file:
 ### If someone does get stuck
 
 Clearing site data in the browser always recovers it — it discards the dead refresh token and forces a fresh login. Worth knowing before debugging anything else.
+
+---
+
+## Launch checklist
+
+Content (Admin):
+- [ ] Settings: phone, email, office hours, logo, Marathi name — check the footer and Contact page.
+- [ ] Settings → Appearance: pick the brand colour / font / corners.
+- [ ] Home hero: real school photos or video (no test images).
+- [ ] Home page sections: replace any test photos/captions; remove links to pages that don't exist (the editor flags them in red).
+- [ ] Testimonials: replace the sample quotes with real ones before switching that section on — or leave it hidden.
+- [ ] Post at least one notice, one event with photos, and the team (Faculty page).
+- [ ] Upload the academic calendar / admission form to Downloads.
+- [ ] Import one competitive-exam result sheet and "Find toppers" for the latest exam.
+
+Technical:
+- [ ] All migrations in §2 applied, **including `scale.sql`** (the admin pages show an amber box if one is missing).
+- [ ] After deploying, open `https://<domain>/api/keepalive` — it should say `"ok":true`. Vercel → Settings → Cron Jobs should list it.
+- [ ] UptimeRobot monitor on `https://<domain>/api/keepalive`.
+- [ ] `IP_HASH_SALT` and `NEXT_PUBLIC_SITE_URL` set on the host.
+- [ ] Supabase auth Site URL / redirect set to the live domain.
+- [ ] Admin password rotated; only staff who need it have accounts.
+- [ ] Open the live site on a phone: hero, menu, Marathi toggle, Check Result with a real student.
+- [ ] Send a test message from the Contact page and find it in Admin → Website → Contact inbox.
+- [ ] Share the home page link on WhatsApp and check the preview shows the school name and photo.
+

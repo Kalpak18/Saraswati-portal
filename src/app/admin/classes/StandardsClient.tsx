@@ -1,5 +1,6 @@
 "use client";
 
+import { clientAction } from "@/lib/clientAction";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -11,8 +12,14 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { saveStandard, deleteStandard, saveDivision, deleteDivision } from "./actions";
+import { saveStandard as saveStandardAction, deleteStandard as deleteStandardAction, saveDivision as saveDivisionAction, deleteDivision as deleteDivisionAction } from "./actions";
 import { normalizeDivision, normalizeStandard, displayDivision, displayStandard } from "@/lib/i18n/normalize";
+
+// Server actions return { ok, error }; these wrappers throw the real message (see lib/clientAction.ts).
+const saveStandard = clientAction(saveStandardAction);
+const deleteStandard = clientAction(deleteStandardAction);
+const saveDivision = clientAction(saveDivisionAction);
+const deleteDivision = clientAction(deleteDivisionAction);
 
 type Std = { id: string; name: string; academic_year: string; display_order: number };
 type Div = { id: string; standard_id: string; name: string; is_active: boolean; display_order: number };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ResponsiveTable } from "@/components/ui/ResponsiveTable";
 import { Badge } from "@/components/ui/Badge";
+import { selectAll } from "@/lib/supabase/selectAll";
 
 export default async function ExamDetailPage(props: PageProps<"/admin/results/[examId]">) {
   const { examId } = await props.params;
@@ -26,11 +27,11 @@ export default async function ExamDetailPage(props: PageProps<"/admin/results/[e
     .order("roll_no", { ascending: true });
 
   // Which students have marks recorded
-  const { data: marks } = await supabase
-    .from("marks")
-    .select("student_id")
-    .eq("exam_id", examId);
-  const withMarks = new Set((marks ?? []).map((m) => m.student_id));
+  // ~80 students × 12 papers can pass one 1000-row page.
+  const marks = await selectAll<{ student_id: string }>((from, to) =>
+    supabase.from("marks").select("student_id").eq("exam_id", examId).order("id").range(from, to),
+  );
+  const withMarks = new Set(marks.map((m) => m.student_id));
 
   const div = exam.divisions as unknown as { name: string; standards: { name: string } | null } | null;
   const label = div ? `${div.standards?.name ?? ""} — ${div.name}`.trim() : "";

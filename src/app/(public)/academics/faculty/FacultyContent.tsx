@@ -4,16 +4,19 @@ import { Users, Mail, Phone } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { PageIntro } from "../../components/PageIntro";
 
-const CATEGORY_ORDER = ["leadership", "management", "faculty"] as const;
+const CATEGORY_ORDER = ["leadership", "management", "faculty", "staff"] as const;
 
-type Member = {
+export type Member = {
   id: string;
   name: string;
   designation: string;
+  designation_mr?: string | null;
+  qualification?: string | null;
+  subjects?: string | null;
   bio: string;
   photo_url: string | null;
-  email: string | null;
-  phone: string | null;
+  email?: string | null;
+  phone?: string | null;
   category: string;
   display_order: number;
 };
@@ -25,7 +28,8 @@ export default function FacultyContent({ members }: { members: Member[] }) {
   const CATEGORY_LABEL: Record<string, string> = {
     leadership: t("नेतृत्व", "Leadership"),
     management: t("व्यवस्थापन", "Management"),
-    faculty:    t("शिक्षक वर्ग", "Faculty"),
+    faculty:    t("शिक्षक वर्ग", "Teachers"),
+    staff:      t("सहाय्यक कर्मचारी", "Support staff"),
   };
 
   const grouped = new Map<string, Member[]>();
@@ -55,7 +59,7 @@ export default function FacultyContent({ members }: { members: Member[] }) {
           <div className="rounded-3xl border border-dashed border-ink-200 bg-white p-14 text-center">
             <Users className="mx-auto h-12 w-12 text-ink-300" />
             <p className="mt-4 font-display text-xl font-semibold text-ink-900">
-              {t("टीमची माहिती लवकरच", "Faculty profiles coming soon")}
+              {t("शिक्षकांची माहिती अद्ययावत केली जात आहे", "Our team page is being updated")}
             </p>
           </div>
         ) : (
@@ -84,8 +88,11 @@ export default function FacultyContent({ members }: { members: Member[] }) {
                       <div className="p-6">
                         <h3 className="line-clamp-1 font-display text-lg font-semibold text-ink-900">{m.name}</h3>
                         <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-700">
-                          {m.designation}
+                          {lang === "mr" && m.designation_mr ? m.designation_mr : m.designation}
                         </p>
+                        {(m.qualification || m.subjects) && (
+                          <p className="mt-1 text-xs text-ink-500">{[m.qualification, m.subjects].filter(Boolean).join(" · ")}</p>
+                        )}
                         {m.bio && (
                           <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-ink-600">{m.bio}</p>
                         )}

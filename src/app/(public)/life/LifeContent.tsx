@@ -5,6 +5,7 @@ import { Calendar, Camera, ArrowUpRight } from "lucide-react";
 import { useLang } from "@/lib/i18n/LangContext";
 import { PageIntro } from "../components/PageIntro";
 import { SectionHeader } from "../components/SectionHeader";
+import { SmartImage } from "../components/SmartImage";
 
 type Event = {
   id: string;
@@ -61,12 +62,8 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
               >
                 <div className="aspect-16/10 w-full overflow-hidden bg-ink-100">
                   {e.cover_photo_url ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={e.cover_photo_url}
-                      alt=""
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
+                    <SmartImage src={e.cover_photo_url} frameRatio={16 / 10}
+                      imgClassName="transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-brand-100 to-accent-100 text-brand-700">
                       <Calendar className="h-14 w-14 opacity-40" />
@@ -74,16 +71,24 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
                   )}
                 </div>
                 <div className="p-6">
-                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-brand-700">
-                    <Calendar className="h-3 w-3" />
-                    <span className="tabular-nums">{e.event_date ?? t("लवकरच", "Coming soon")}</span>
-                  </div>
-                  <h3 className="mt-3 line-clamp-2 font-display text-lg font-semibold leading-tight text-ink-900 group-hover:text-brand-800">
+                  {e.event_date && (
+                    <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-brand-700">
+                      <Calendar className="h-3 w-3" />
+                      <span className="tabular-nums">
+                        {new Date(`${e.event_date}T00:00:00`).toLocaleDateString(lang === "mr" ? "mr-IN" : "en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="line-clamp-2 font-display text-lg font-semibold leading-tight text-ink-900 group-hover:text-brand-800">
                     {e.title}
                   </h3>
                   {e.description && (
                     <p className="mt-2 line-clamp-2 text-sm text-ink-600">{e.description}</p>
                   )}
+                  <div className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-brand-700">
+                    {t("कार्यक्रम पहा", "View event")}
+                    <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </div>
                 </div>
               </Link>
             ))}
@@ -91,7 +96,8 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
         )}
       </section>
 
-      {/* Galleries */}
+      {/* Galleries — only once albums exist (events carry their own photos). */}
+      {albums.length > 0 && (
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <SectionHeader
           eyebrow={t("गॅलरी", "Gallery")}
@@ -139,6 +145,7 @@ export default function LifeContent({ events, albums }: { events: Event[]; album
           </div>
         )}
       </section>
+      )}
     </>
   );
 }

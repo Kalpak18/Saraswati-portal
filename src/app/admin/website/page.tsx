@@ -1,7 +1,8 @@
 import Link from "next/link";
 import {
-  Home, Calendar, Users, Trophy, Camera, MessageSquare, ArrowRight, Sparkles,
+  Home, Calendar, Users, Trophy, Medal, FileDown, LayoutTemplate, Megaphone, Info, MessageSquare, ArrowRight, Sparkles,
 } from "lucide-react";
+import { createSupabaseServer } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 const TILES: {
@@ -13,44 +14,77 @@ const TILES: {
   ready: boolean;
 }[] = [
   {
+    href: "/admin/website/home",
+    title: "Home page",
+    description: "Add, remove, reorder and rename every section — banners, results, events, cards, text.",
+    icon: LayoutTemplate,
+    tone: "indigo",
+    ready: true,
+  },
+  {
+    href: "/admin/website/about",
+    title: "About page",
+    description: "Heading, vision / mission / values cards and any sections you add.",
+    icon: Info,
+    tone: "green",
+    ready: true,
+  },
+  {
     href: "/admin/website/hero",
     title: "Home hero",
-    description: "Title, tagline, cover photo, CTA buttons on the / page.",
+    description: "Full-screen school photo or video that opens the home page.",
     icon: Sparkles,
     tone: "indigo",
     ready: true,
   },
   {
+    href: "/admin/website/notices",
+    title: "Notice board",
+    description: "Admission, result, exam and holiday updates with PDF attachments.",
+    icon: Megaphone,
+    tone: "red",
+    ready: true,
+  },
+  {
     href: "/admin/website/events",
     title: "Events",
-    description: "Add & edit events with photo galleries.",
+    description: "Events with photo galleries — they play through the home page story.",
     icon: Calendar,
     tone: "purple",
-    ready: false,
+    ready: true,
   },
+
   {
     href: "/admin/website/team",
     title: "Team",
     description: "Leadership, teachers, and support staff.",
     icon: Users,
     tone: "green",
-    ready: false,
+    ready: true,
   },
   {
     href: "/admin/website/achievements",
     title: "Achievements",
-    description: "Academic, sports and cultural highlights.",
+    description: "Import Olympiad / NMMS / scholarship results, or add sports & cultural wins.",
     icon: Trophy,
     tone: "amber",
-    ready: false,
+    ready: true,
   },
   {
-    href: "/admin/website/gallery",
-    title: "Gallery",
-    description: "Photo albums organised by event.",
-    icon: Camera,
+    href: "/admin/website/toppers",
+    title: "Toppers",
+    description: "Rank students from uploaded marks and feature them on the site.",
+    icon: Medal,
+    tone: "green",
+    ready: true,
+  },
+  {
+    href: "/admin/website/downloads",
+    title: "Downloads",
+    description: "Calendar, forms, circulars and syllabus for parents to download.",
+    icon: FileDown,
     tone: "blue",
-    ready: false,
+    ready: true,
   },
   {
     href: "/admin/website/messages",
@@ -58,7 +92,7 @@ const TILES: {
     description: "View messages sent from the public contact form.",
     icon: MessageSquare,
     tone: "red",
-    ready: false,
+    ready: true,
   },
 ];
 
@@ -71,7 +105,10 @@ const tones: Record<string, { bg: string; text: string }> = {
   red:    { bg: "bg-red-50",    text: "text-red-600" },
 };
 
-export default function WebsiteIndexPage() {
+export default async function WebsiteIndexPage() {
+  const supabase = await createSupabaseServer();
+  const { count: newMessages } = await supabase
+    .from("contact_messages").select("id", { count: "exact", head: true }).eq("status", "new");
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -113,7 +150,12 @@ export default function WebsiteIndexPage() {
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-base font-semibold text-ink-900">{t.title}</h3>
+              <h3 className="mt-4 flex items-center gap-2 text-base font-semibold text-ink-900">
+                {t.title}
+                {t.href.endsWith("/messages") && (newMessages ?? 0) > 0 && (
+                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-bold text-white">{newMessages} new</span>
+                )}
+              </h3>
               <p className="mt-1 text-xs text-ink-500">{t.description}</p>
               {t.ready && (
                 <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-700">
