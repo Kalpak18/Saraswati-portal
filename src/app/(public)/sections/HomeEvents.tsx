@@ -9,6 +9,7 @@ import { Parallax, Reveal } from "../components/motion";
 import { BannerGallery } from "../components/BannerGallery";
 import { FramedImage } from "../components/FramedImage";
 import { ItemLayout } from "../components/ItemLayout";
+import { SmartImage, useImageRatio, wouldCropBadly } from "../components/SmartImage";
 import { layoutOf, pick, type HomeSection, type PhotoFit, type PhotoShape } from "@/lib/homeSections";
 
 export type HomeEvent = {
@@ -94,6 +95,8 @@ function EventChapter({ e, flip, lang, frame }: { e: HomeEvent; flip: boolean; l
   const cover = e.cover_photo_url ?? e.photos[0] ?? null;
   const extras = e.photos.filter((p) => p !== cover).slice(0, 3);
   const date = formatDate(e.event_date, lang);
+  // Posters / flyers / screenshots are shown whole instead of cropped.
+  const poster = wouldCropBadly(useImageRatio(cover), 16 / 10);
 
   return (
     <article className="relative grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
@@ -101,7 +104,12 @@ function EventChapter({ e, flip, lang, frame }: { e: HomeEvent; flip: boolean; l
       <div className={cn("relative lg:col-span-7", flip && "lg:order-2")}>
         <Reveal from="scale">
           <Link href={`/life/${e.slug}`} className="group block overflow-hidden rounded-3xl bg-ink-200 shadow-xl">
-            {cover && !(frame.shape || frame.fit === "contain") ? (
+            {cover && poster && !(frame.shape || frame.fit) ? (
+              <div className="aspect-4/3 sm:aspect-16/10">
+                <SmartImage src={cover} frameRatio={16 / 10}
+                  imgClassName="transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              </div>
+            ) : cover && !(frame.shape || frame.fit === "contain") ? (
               // Default look: cropped cover drifting under its frame.
               <div className="aspect-4/3 overflow-hidden sm:aspect-16/10">
                 <Parallax speed={-90} className="h-[115%] translate-y-[-7%]">
@@ -157,15 +165,20 @@ function EventChapter({ e, flip, lang, frame }: { e: HomeEvent; flip: boolean; l
           {e.description && (
             <p className="mt-4 line-clamp-5 text-base leading-relaxed text-ink-600">{e.description}</p>
           )}
-          <Link
-            href={`/life/${e.slug}`}
-            className="group mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-900"
-          >
-            {e.photos.length > 0
-              ? (lang === "mr" ? `सर्व ${e.photos.length} फोटो पहा` : e.photos.length === 1 ? "View the photo" : `View all ${e.photos.length} photos`)
-              : (lang === "mr" ? "अधिक वाचा" : "Read more")}
-            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </Link>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/life/${e.slug}`}
+              className="group inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800"
+            >
+              {lang === "mr" ? "कार्यक्रम पहा" : "View event"}
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+            {e.photos.length > 1 && (
+              <span className="text-sm text-ink-500">
+                {lang === "mr" ? `${e.photos.length} फोटो` : `${e.photos.length} photos`}
+              </span>
+            )}
+          </div>
         </Reveal>
       </div>
     </article>

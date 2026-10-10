@@ -1,6 +1,9 @@
 import { type ReactNode } from "react";
 import { shapeClass, type PhotoFit, type PhotoShape } from "@/lib/homeSections";
 import { cn } from "@/lib/utils";
+import { SmartImage } from "./SmartImage";
+
+const RATIO: Record<string, number> = { "4:3": 4 / 3, "16:9": 16 / 9, "1:1": 1, "3:4": 3 / 4 };
 
 /**
  * Every section photo goes through this frame so the admin's per-section
@@ -8,15 +11,18 @@ import { cn } from "@/lib/utils";
  *   shape "original"  → the photo keeps its own proportions (never cropped)
  *   fixed shape + fill    → cropped to fill the shape
  *   fixed shape + contain → whole photo shown, a soft blurred copy fills the rest
+ *   fixed shape, fit not chosen → crop ordinary photos, but show posters /
+ *                                 flyers / screenshots whole (SmartImage)
  * `fallback` is the shape the section used before settings existed.
  */
 export function FramedImage({
-  src, alt = "", shape, fallback, fit = "fill", className, imgClassName, loading = "lazy", children,
+  src, alt = "", shape, fallback, fit, className, imgClassName, loading = "lazy", children,
 }: {
   src: string;
   alt?: string;
   shape?: PhotoShape;
   fallback: Exclude<PhotoShape, "original"> | "original";
+  /** Left unset = decide per photo. */
   fit?: PhotoFit;
   /** Classes for the frame (rounding, background…). */
   className?: string;
@@ -34,6 +40,16 @@ export function FramedImage({
       <div className={cn("relative overflow-hidden", className)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={alt} loading={loading} className={cn("block h-auto w-full", imgClassName)} />
+        {children}
+      </div>
+    );
+  }
+
+  if (!fit) {
+    return (
+      <div className={cn("relative overflow-hidden", aspect, className)}>
+        <SmartImage src={src} alt={alt} loading={loading} frameRatio={RATIO[shape ?? fallback] ?? 4 / 3}
+          className="absolute inset-0" imgClassName={imgClassName} />
         {children}
       </div>
     );
